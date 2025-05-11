@@ -10,7 +10,8 @@ function LoginForm() {
     e.preventDefault();
 
     try {
-        const BASE_URL = 'http://gfgp.ai:8090/api/';
+        const BASE_URL = 'https://gfgp.ai/api/';
+        // const BASE_URL = 'http://localhost:8090/api/';
 
         const res = await fetch(BASE_URL + 'auth/login', {
           method: 'POST',
@@ -22,7 +23,7 @@ function LoginForm() {
         let errorMessage = 'Login failed!';
 
         if (!res.ok) {
-            console.error('Login failed:', res.status, res.statusText);
+            console.error('Login failed:', res);
           // Try to parse error body if it's JSON
           if (contentType && contentType.includes("application/json")) {
             const errorData = await res.json();
