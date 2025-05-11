@@ -12,12 +12,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
+
       - name: Install dependencies
         run: npm install
+
       - name: Build the React app
         run: npm run build
 
@@ -30,16 +33,14 @@ jobs:
       - name: Save Docker image as tarball
         run: docker save my-react-app -o react-app.tar
 
-      - name: Set permissions for the target directory
-        run: sudo chmod -R 777 /home/nelson/react-app
       - name: Copy image to droplet
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DROPLET_IP }}
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          source: "dist/**"
-          target: "/home/nelson/react-app"
+          source: "react-app.tar"
+          target: "/home/nelson/deploy"
 
       - name: Deploy on droplet
         uses: appleboy/ssh-action@v1.0.3
@@ -48,6 +49,6 @@ jobs:
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
           script: |
-            docker load -i ~/deploy/react-app.tar
+            docker load -i /home/nelson/deploy/react-app.tar
             docker stop react-app || true && docker rm react-app || true
             docker run -d --name react-app -p 80:80 my-react-app
