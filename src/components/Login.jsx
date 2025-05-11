@@ -10,7 +10,7 @@ function LoginForm() {
     e.preventDefault();
 
     try {
-        const BASE_URL = 'http://161.35.80.82:8090/api/';
+        const BASE_URL = '/api/';
         // const BASE_URL = 'http://localhost:8090/api/';
 
         const res = await fetch(BASE_URL + 'auth/login', {
@@ -61,7 +61,7 @@ function LoginForm() {
         console.error('Login error:', err);
         toast.error('Something went wrong');
       }
-};
+    };
 
   return (
     <form onSubmit={handleSubmit} style={{ width: '100%' }}>
