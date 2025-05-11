@@ -30,6 +30,8 @@ jobs:
       - name: Save Docker image as tarball
         run: docker save my-react-app -o react-app.tar
 
+      - name: Set permissions for the target directory
+        run: sudo chmod -R 777 /home/nelson/react-app
       - name: Copy image to droplet
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -37,7 +39,7 @@ jobs:
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
           source: "dist/**"
-          target: "/home/ubuntu/react-app"
+          target: "/home/nelson/react-app"
 
       - name: Deploy on droplet
         uses: appleboy/ssh-action@v1.0.3
