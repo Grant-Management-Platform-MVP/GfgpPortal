@@ -10,7 +10,7 @@ function LoginForm() {
     e.preventDefault();
 
     try {
-        const BASE_URL = 'https://gfgp.ai/api/';
+        const BASE_URL = '161.35.80.82:8090/api/';
         // const BASE_URL = 'http://localhost:8090/api/';
 
         const res = await fetch(BASE_URL + 'auth/login', {
