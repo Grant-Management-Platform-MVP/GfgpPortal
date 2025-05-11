@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import LoginForm from './components/Login';
 import RegisterForm from './components/RegisterForm';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   const [activeTab, setActiveTab] = useState('login');
 
   return (
     <div className="container mt-5">
+       <ToastContainer position="top-right" autoClose={5000} />
       <div className="text-center mb-4">
         <div className="d-flex justify-content-center mb-4">
           <img
