@@ -28,8 +28,8 @@ jobs:
           host: ${{ secrets.DROPLET_IP }}
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          source: react-app.tar
-          target: ~/deploy
+          source: "build/**"
+          target: "/home/ubuntu/react-app"
 
       - name: Deploy on droplet
         uses: appleboy/ssh-action@v1.0.3
