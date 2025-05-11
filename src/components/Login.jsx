@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function LoginForm() {
   const [username, setUsername] = useState('');
@@ -10,13 +12,30 @@ function LoginForm() {
     try {
         const BASE_URL = 'http://gfgp.ai:8090/api/';
 
-      const res = await fetch(BASE_URL+'auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
+        const res = await fetch(BASE_URL + 'auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        });
 
-      if (res.ok) {
+        const contentType = res.headers.get("content-type");
+        let errorMessage = 'Login failed!';
+
+        if (!res.ok) {
+            console.error('Login failed:', res.status, res.statusText);
+          // Try to parse error body if it's JSON
+          if (contentType && contentType.includes("application/json")) {
+            const errorData = await res.json();
+            errorMessage = errorData.message || errorMessage;
+          } else {
+            const text = await res.text();
+            errorMessage = text || errorMessage;
+          }
+
+          toast.error(errorMessage);
+          return;
+        }
+
         const data = await res.json();
         localStorage.setItem('jwt', data.token);
         localStorage.setItem('role', data.role);
@@ -35,16 +54,13 @@ function LoginForm() {
             window.location.href = '/admin-dashboard.html';
             break;
           default:
-            alert('Unknown role');
+            toast.error('Unknown role.');
         }
-      } else {
-        alert('Login failed');
+      } catch (err) {
+        console.error('Login error:', err);
+        toast.error('Something went wrong');
       }
-    } catch (err) {
-      console.error('Login error:', err);
-      alert('Something went wrong');
-    }
-  };
+};
 
   return (
     <form onSubmit={handleSubmit} style={{ width: '100%' }}>
