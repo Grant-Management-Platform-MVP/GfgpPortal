@@ -8,7 +8,9 @@ function LoginForm() {
     e.preventDefault();
 
     try {
-      const res = await fetch('http://localhost:8080/api/auth/login', {
+        const BASE_URL = 'http://gfgp.ai:8090/api/';
+
+      const res = await fetch(BASE_URL+'auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),

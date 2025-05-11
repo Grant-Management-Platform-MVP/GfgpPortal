@@ -20,7 +20,9 @@ const RegisterForm = () => {
     e.preventDefault();
 
     try {
-      const response = await fetch('http://localhost:8080/api/auth/register', {
+        const BASE_URL = 'http://gfgp.ai:8090/api/';
+
+      const response = await fetch(BASE_URL+'auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
