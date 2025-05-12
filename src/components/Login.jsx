@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useNavigate } from 'react-router-dom';
+
 
 function LoginForm() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = async e => {
     e.preventDefault();
 
     try {
-      // const BASE_URL = '/api/';
-      const BASE_URL = 'http://localhost:8090/api/';
+      const BASE_URL = '/api/';
+      // const BASE_URL = 'http://localhost:8090/api/';
 
       const res = await fetch(BASE_URL + 'auth/login', {
         method: 'POST',
@@ -37,23 +40,27 @@ function LoginForm() {
 
       const user = await res.json();
       toast.success('Login successful!');
+      localStorage.setItem('user', JSON.stringify(user));
 
-      switch (user.role) {
-        case 'GRANTEE':
-          window.location.href = '/grantee-dashboard.html';
-          break;
-        case 'GRANTOR':
-          window.location.href = '/grantor-dashboard.html';
-          break;
-        case 'AUDITOR':
-          window.location.href = '/auditor-dashboard.html';
-          break;
-        case 'ADMIN':
-          window.location.href = '/admin-dashboard.html';
-          break;
-        default:
-          toast.error('Unknown role.');
+      setTimeout(() => {
+        switch (user.role) {
+          case 'GRANTEE':
+            console.log('Navigating to /grantee');
+            navigate('/grantee');
+            break;
+          case 'GRANTOR':
+            navigate('/grantor');
+            break;
+          case 'AUDITOR':
+            navigate('/auditor');
+            break;
+          case 'ADMIN':
+            navigate('/admin');
+            break;
+          default:
+            toast.error('Unknown role.');
       }
+    }, 500);
 
     } catch (err) {
       console.error('Login error:', err);
