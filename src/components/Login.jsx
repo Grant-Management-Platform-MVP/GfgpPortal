@@ -11,8 +11,6 @@ function LoginForm() {
 
     try {
         const BASE_URL = '/api/';
-        // const BASE_URL = 'https://api.gfgp.ai/api/';
-        // const BASE_URL = 'http://localhost:8090/api/';
 
         const res = await fetch(BASE_URL + 'auth/login', {
           method: 'POST',
@@ -40,6 +38,7 @@ function LoginForm() {
         }
 
         const data = await res.json();
+        toast.success('Login successful!');
         localStorage.setItem('jwt', data.token);
         localStorage.setItem('role', data.role);
 
