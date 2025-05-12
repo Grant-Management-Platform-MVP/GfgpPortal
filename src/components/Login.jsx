@@ -11,12 +11,14 @@ function LoginForm() {
 
     try {
         const BASE_URL = '/api/';
+        // const BASE_URL = 'https://api.gfgp.ai/api/';
         // const BASE_URL = 'http://localhost:8090/api/';
 
         const res = await fetch(BASE_URL + 'auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password }),
+          credentials: 'include'
         });
 
         const contentType = res.headers.get("content-type");
