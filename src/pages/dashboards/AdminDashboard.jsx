@@ -1,8 +1,12 @@
-const AdminDashboard = () => (
-  <div className="container mt-5">
-    <h2>Admin Dashboard</h2>
-    <p>This is your space to admin GFGP Users.</p>
-  </div>
-);
+import React from 'react';
+import DashboardLayout from '@components/DashboardLayout';
+
+const AdminDashboard = () => {
+  return (
+    <DashboardLayout title="Admin Dashboard">
+      <div className="alert alert-info">Hello Admin! Manage users, roles, and platform settings here.</div>
+    </DashboardLayout>
+  );
+};
 
 export default AdminDashboard;

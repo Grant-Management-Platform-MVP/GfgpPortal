@@ -16,25 +16,26 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
 
-        <Route path="/grantee" element={
+        {/* role-based routes */}
+        <Route path="/grantee/*" element={
           <ProtectedRoute allowedRoles={['GRANTEE']}>
             <GranteeDashboard />
           </ProtectedRoute>
         } />
 
-        <Route path="/grantor" element={
+        <Route path="/grantor/*" element={
           <ProtectedRoute allowedRoles={['GRANTOR']}>
             <GrantorDashboard />
           </ProtectedRoute>
         } />
 
-        <Route path="/auditor" element={
+        <Route path="/auditor/*" element={
           <ProtectedRoute allowedRoles={['AUDITOR']}>
             <AuditorDashboard />
           </ProtectedRoute>
         } />
 
-        <Route path="/admin" element={
+        <Route path="/admin/*" element={
           <ProtectedRoute allowedRoles={['ADMIN']}>
             <AdminDashboard />
           </ProtectedRoute>
