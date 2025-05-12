@@ -48,14 +48,16 @@ const DashboardLayout = ({ title, children, userRole }) => {
   return (
     <div className="d-flex" style={{ minHeight: '100vh' }}>
       {/* Sidebar */}
-      <nav className="bg-light border-end sidebar p-3" style={{ width: '250px' }}>
-        <h5 className="mb-4">Menu</h5>
+      <nav className="bg-dark border-end sidebar p-3" style={{ width: '250px' }}>
+        <div className="navbar-brand" style={{ textAlign: 'center' }}>
+            <img src={logo} alt="Logo" style={{ height: '70px', textAlign: 'center' }} />
+          </div>
         <ul className="nav flex-column">
           {sidebarLinks.map(({ path, label }) => (
             <li key={path} className="nav-item">
               <Link
                 className={`nav-link ${location.pathname === path ? 'active' : ''}`}
-                to={path}
+                to={path}  style={{color: '#fff' }}
               >
                 {label}
               </Link>
@@ -65,12 +67,9 @@ const DashboardLayout = ({ title, children, userRole }) => {
       </nav>
 
       {/* Main Content */}
-      <div className="flex-grow-1">
+      <div className="flex-grow-1"style={{ backgroundColor: '#fff', color: '#000' }}>
         {/* Navbar */}
-        <header className="navbar navbar-expand-lg navbar-dark bg-primary px-4">
-          <a className="navbar-brand" href="/">
-            <img src={logo} alt="Logo" style={{ height: '40px' }} />
-          </a>
+        <header className="navbar navbar-expand-lg navbar-dark bg-primary px-4" style={{ height: '60px' }}>
           <div className="ms-auto d-flex align-items-center">
             <Link to="/profile" className="text-white me-3">Profile</Link>
             <Link to="/logout" className="text-white">Logout</Link>
