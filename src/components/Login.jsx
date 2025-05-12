@@ -3,19 +3,19 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
 
-
 function LoginForm() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async e => {
     e.preventDefault();
+    setLoading(true);
 
     try {
-      const BASE_URL = '/api/';
       // const BASE_URL = 'http://localhost:8090/api/';
-
+      const BASE_URL = '/api/';
       const res = await fetch(BASE_URL + 'auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -35,6 +35,7 @@ function LoginForm() {
           errorMessage = text || errorMessage;
         }
         toast.error(errorMessage);
+        setLoading(false);
         return;
       }
 
@@ -45,7 +46,6 @@ function LoginForm() {
       setTimeout(() => {
         switch (user.role) {
           case 'GRANTEE':
-            console.log('Navigating to /grantee');
             navigate('/grantee');
             break;
           case 'GRANTOR':
@@ -59,37 +59,53 @@ function LoginForm() {
             break;
           default:
             toast.error('Unknown role.');
-      }
-    }, 500);
+        }
+        setLoading(false);
+      }, 500);
 
     } catch (err) {
       console.error('Login error:', err);
       toast.error('Something went wrong');
+      setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ width: '100%' }}>
-      <div className="mb-3">
-        <label className="form-label">Username</label>
+    <form onSubmit={handleSubmit} className="needs-validation" noValidate>
+      <div className="form-floating mb-3">
         <input
+          type="text"
           className="form-control"
+          id="usernameInput"
+          placeholder="Username"
           value={username}
           onChange={e => setUsername(e.target.value)}
           required
         />
+        <label htmlFor="usernameInput">Username</label>
       </div>
-      <div className="mb-3">
-        <label className="form-label">Password</label>
+
+      <div className="form-floating mb-4">
         <input
           type="password"
           className="form-control"
+          id="passwordInput"
+          placeholder="Password"
           value={password}
           onChange={e => setPassword(e.target.value)}
           required
         />
+        <label htmlFor="passwordInput">Password</label>
       </div>
-      <button className="btn btn-primary btn-lg w-100" style={{ backgroundColor: '#1E88E5' }}>Login</button>
+
+      <button
+        type="submit"
+        className="btn btn-primary btn-lg w-100"
+        style={{ backgroundColor: '#1E88E5' }}
+        disabled={loading}
+      >
+        {loading ? 'Logging in...' : 'Login'}
+      </button>
     </form>
   );
 }
