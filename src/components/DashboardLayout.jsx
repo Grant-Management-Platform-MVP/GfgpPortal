@@ -71,7 +71,7 @@ const DashboardLayout = ({ title, children, userRole }) => {
         {/* Navbar */}
         <header className="navbar navbar-expand-lg navbar-dark bg-primary px-4" style={{ height: '60px' }}>
           <div className="ms-auto d-flex align-items-center">
-            <Link to="/profile" className="text-white me-3">Profile</Link>
+            <Link to={`/${userRole}/profile`} className="text-white me-3">Profile</Link>
             <Link to="/logout" className="text-white">Logout</Link>
           </div>
         </header>
