@@ -11,18 +11,13 @@ const RegisterForm = () => {
     orgName: "",
     orgType: "",
     registrationNumbers: [""],
-    document: null,
   });
 
   const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    if (name === "document") {
-      setFormData({ ...formData, document: files[0] });
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleRegNumberChange = (index, value) => {
@@ -53,56 +48,51 @@ const RegisterForm = () => {
       return;
     }
 
-    if (!formData.document || formData.document.type !== "application/pdf") {
-      alert("Please upload a valid PDF document");
-      return;
-    }
-
-    const formPayload = new FormData();
-    for (const [key, value] of Object.entries(formData)) {
-      if (key === "registrationNumbers") {
-        value.forEach((v, i) =>
-          formPayload.append(`registrationNumbers[${i}]`, v)
-        );
-      } else if (key === "document") {
-        formPayload.append("document", value);
-      } else {
-        formPayload.append(key, value);
-      }
-    }
-
     setSubmitting(true);
     try {
-      const formData = new FormData();
-      formData.append(
-        "data",
-        JSON.stringify({formData})
-      );
+      const payload = { ...formData };
 
-      const BASE_URL = 'http://localhost:8090/api/';
-      // const BASE_URL = '/api/';
+      const BASE_URL = "http://localhost:8090/api/";
 
-      const response = await fetch(BASE_URL+"/auth/register", {
+      const response = await fetch(BASE_URL + "auth/register", {
         method: "POST",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
 
       const result = await response.text();
 
       if (response.ok) {
         toast.success("Your registration has been submitted and is pending approval.");
+          // clear form
+        setFormData({
+          fullName: "",
+          username: "",
+          email: "",
+          password: "",
+          confirmPassword: "",
+          orgName: "",
+          orgType: "",
+          registrationNumbers: [""],
+        });
+
+        setTimeout(() => {
+          window.location.reload();
+        }, 2500);
       } else {
         toast.error("Registration failed: " + result);
       }
-      } catch (err) {
-        toast.error("Registration failed: " + err.message);
-      } finally {
-        setSubmitting(false);
-      }
+    } catch (err) {
+      toast.error("Registration failed: " + err.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} encType="multipart/form-data" className="p-3">
+    <form onSubmit={handleSubmit} className="p-3">
       <div className="mb-3">
         <label htmlFor="fullName" className="form-label">Full Name</label>
         <input
@@ -215,19 +205,6 @@ const RegisterForm = () => {
         <button type="button" className="btn btn-outline-primary btn-sm mt-1" onClick={addRegNumber}>
           + Add Another
         </button>
-      </div>
-
-      <div className="mb-3">
-        <label htmlFor="document" className="form-label">Upload Registration Document (PDF only)</label>
-        <input
-          type="file"
-          id="document"
-          name="document"
-          accept="application/pdf"
-          className="form-control"
-          onChange={handleChange}
-          required
-        />
       </div>
 
       <button type="submit" className="btn btn-success btn-lg w-100" disabled={submitting}>
