@@ -21,7 +21,7 @@ function App() {
       </div>
       <h2 className="text-center mb-4">Welcome to the Grantee Platform</h2>
       <div className="card col-md-6 offset-md-3">
-        <div className="card-body">
+        <div className="card-body mb-3">
           <ul className="nav nav-tabs">
             <li className="nav-item">
               <button
@@ -46,6 +46,7 @@ function App() {
           </div>
         </div>
       </div>
+      <br/>
     </div>
   );
 }
