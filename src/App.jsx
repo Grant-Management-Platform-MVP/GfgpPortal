@@ -1,53 +1,48 @@
-import React, { useState } from 'react';
-import LoginForm from './components/Login';
-import RegisterForm from './components/RegisterForm';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import LandingPage from './pages/LandingPage';
+import GranteeDashboard from './pages/dashboards/GranteeDashboard';
+import GrantorDashboard from './pages/dashboards/GrantorDashboard';
+import AuditorDashboard from './pages/dashboards/AuditorDashboard';
+import AdminDashboard from './pages/dashboards/AdminDashboard';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('login');
-
   return (
-    <div className="container mt-5">
-       <ToastContainer position="top-right" autoClose={5000} />
-      <div className="text-center mb-4">
-        <div className="d-flex justify-content-center mb-4">
-          <img
-            src="https://gfgp.ai/img/logo.png"
-            alt="GFGP Logo"
-            style={{ height: 129, width: 129 }}
-          />
-        </div>
-      </div>
-      <h2 className="text-center mb-4">Welcome to the Grantee Platform</h2>
-      <div className="card col-md-6 offset-md-3">
-        <div className="card-body mb-3">
-          <ul className="nav nav-tabs">
-            <li className="nav-item">
-              <button
-                className={`nav-link ${activeTab === 'login' ? 'active' : ''}`}
-                onClick={() => setActiveTab('login')}
-              >
-                Login
-              </button>
-            </li>
-            <li className="nav-item">
-              <button
-                className={`nav-link ${activeTab === 'register' ? 'active' : ''}`}
-                onClick={() => setActiveTab('register')}
-              >
-                Register
-              </button>
-            </li>
-          </ul>
+    <Router>
+      <ToastContainer position="top-right" autoClose={5000} />
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
 
-          <div className="mt-3">
-            {activeTab === 'login' ? <LoginForm /> : <RegisterForm />}
-          </div>
-        </div>
-      </div>
-      <br/>
-    </div>
+        <Route path="/grantee" element={
+          <ProtectedRoute allowedRoles={['GRANTEE']}>
+            <GranteeDashboard />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/grantor" element={
+          <ProtectedRoute allowedRoles={['GRANTOR']}>
+            <GrantorDashboard />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/auditor" element={
+          <ProtectedRoute allowedRoles={['AUDITOR']}>
+            <AuditorDashboard />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin" element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        } />
+
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </Router>
   );
 }
 
