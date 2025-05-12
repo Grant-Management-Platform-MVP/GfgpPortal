@@ -52,7 +52,8 @@ const RegisterForm = () => {
     try {
       const payload = { ...formData };
 
-      const BASE_URL = "http://localhost:8090/api/";
+      // const BASE_URL = "http://localhost:8090/api/";
+      const BASE_URL = "/api/";
 
       const response = await fetch(BASE_URL + "auth/register", {
         method: "POST",
