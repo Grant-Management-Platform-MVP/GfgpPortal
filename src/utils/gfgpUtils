@@ -1,0 +1,10 @@
+// utils/gfgpUtils.js
+export const GFGP_STRUCTURE_KEY = "gfgpStructure";
+
+export const saveGfgpStructure = (structure) => {
+    localStorage.setItem(GFGP_STRUCTURE_KEY, structure);
+};
+
+export const getGfgpStructure = () => {
+    return localStorage.getItem(GFGP_STRUCTURE_KEY);
+};
