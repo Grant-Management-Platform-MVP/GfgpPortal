@@ -4,13 +4,15 @@ import logo from '../assets/logo.png';
 
 const DashboardLayout = ({ title, children, userRole }) => {
   const location = useLocation();
+  const hasSelectedStructure = localStorage.getItem('gfgpStructure');
+
 
   const getSidebarLinks = () => {
     switch (userRole) {
       case 'grantee':
         return [
           { path: '/grantee/select-structure', label: 'Select GFGP Structure' },
-          { path: '/grantee/questionnaire', label: 'Start Questionnaire' },
+          { path: '/grantee/questionnaire', label: 'Start Questionnaire', disabled: !hasSelectedStructure },
           { path: '/grantee/compliance-reports', label: 'Compliance Reports' },
           { path: '/grantee/recommendations', label: 'Recommendations' },
           { path: '/grantee/documents', label: 'Document Uploads' }
@@ -53,8 +55,8 @@ const DashboardLayout = ({ title, children, userRole }) => {
             <img src={logo} alt="Logo" style={{ height: '70px', textAlign: 'center' }} />
           </div>
         <ul className="nav flex-column">
-          {sidebarLinks.map(({ path, label }) => (
-            <li key={path} className="nav-item">
+          {sidebarLinks.map(({ path, label, disabled }) => (
+            <li key={path} className={`nav-item ${disabled ? 'disabled' : ''}`}>
               <Link
                 className={`nav-link ${location.pathname === path ? 'active' : ''}`}
                 to={path}  style={{color: '#fff' }}
