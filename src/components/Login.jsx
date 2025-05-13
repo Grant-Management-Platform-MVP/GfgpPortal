@@ -46,7 +46,14 @@ function LoginForm() {
       setTimeout(() => {
         switch (user.role) {
           case 'GRANTEE':
-            navigate('/grantee');
+            if (!user.hasSelectedStructure) {
+              navigate('/grantee/select-structure');
+            } else {
+                const storedUser = JSON.parse(localStorage.getItem('user'));
+                const gfgpStructure = storedUser?.selectedStructure || storedUser?.userId;
+                localStorage.setItem('gfgpStructure', gfgpStructure);
+                navigate('/grantee');
+            }
             break;
           case 'GRANTOR':
             navigate('/grantor');
