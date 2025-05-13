@@ -12,9 +12,9 @@ const Profile = () => {
         const BASE_URL = '/api/';
         // const BASE_URL = 'http://localhost:8090/api/';
         const user = JSON.parse(localStorage.getItem('user'));
-        if (!user || !user.id) throw new Error('User not found in localStorage');
+        if (!user || !user.userId) throw new Error('User not found in localStorage');
 
-        const res = await fetch(BASE_URL +'user/profile/' + user.id);
+        const res = await fetch(BASE_URL +'user/profile/' + user.userId);
         if (!res.ok) throw new Error('Failed to fetch profile');
 
         const data = await res.json();
