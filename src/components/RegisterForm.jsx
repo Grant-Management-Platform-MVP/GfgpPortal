@@ -12,9 +12,7 @@ const DEFAULT_FORM = {
   registrationNumbers: [""],
 };
 
-const BASE_URL = "/api/";
-// const BASE_URL = 'http://localhost:8090/api/';
-
+const BASE_URL = import.meta.env.VITE_BASE_URL;
 const RegisterForm = () => {
   const [formData, setFormData] = useState(DEFAULT_FORM);
   const [submitting, setSubmitting] = useState(false);
