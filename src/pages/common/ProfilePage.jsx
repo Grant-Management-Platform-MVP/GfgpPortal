@@ -9,8 +9,7 @@ const Profile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const BASE_URL = '/api/';
-        // const BASE_URL = 'http://localhost:8090/api/';
+        const BASE_URL = import.meta.env.VITE_BASE_URL;
         const user = JSON.parse(localStorage.getItem('user'));
         if (!user || !user.userId) throw new Error('User not found in localStorage');
 
