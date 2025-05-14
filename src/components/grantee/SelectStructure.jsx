@@ -43,8 +43,7 @@ const SelectStructure = () => {
     const userId = storedUser?.id || storedUser?.userId;
 
     try {
-        const BASE_URL = '/api/';
-    //   const BASE_URL = 'http://localhost:8090/api/';
+      const BASE_URL = import.meta.env.VITE_BASE_URL;
       const res = await fetch(BASE_URL + 'gfgp/structure', {
         method: 'POST',
         headers: {
