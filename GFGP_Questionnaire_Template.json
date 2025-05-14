@@ -1,0 +1,36 @@
+{
+    "templateCode": "FOUNDATION_001",
+    "version": "1.0",
+    "sections": [{
+        "sectionId": "SEC_GOV",
+        "title": "Governance",
+        "description": "This section assesses the organization’s governance structure.",
+        "displayOrder": 1,
+        "questions": [{
+                "id": "gov_q1",
+                "questionCode": "BOARD_EXISTENCE",
+                "questionText": "Does the organization have a Board of Directors?",
+                "type": "SINGLE_CHOICE",
+                "required": true,
+                "options": ["Yes", "No", "Not Applicable"],
+                "guidance": "Include governing board responsible for oversight and strategic direction.",
+                "uploadEvidence": true
+            },
+            {
+                "id": "gov_q2",
+                "questionCode": "BOARD_MEETING_FREQ",
+                "questionText": "How often does the board meet?",
+                "type": "TEXT",
+                "required": false,
+                "conditional": {
+                    "questionId": "gov_q1",
+                    "showIf": ["Yes"]
+                },
+                "guidance": "E.g. quarterly, monthly, ad hoc, etc.",
+                "typeConfig": {
+                    "maxLength": 100
+                }
+            }
+        ]
+    }]
+}
