@@ -9,7 +9,7 @@ const AdminQuestionnaireBuilder = () => {
   const [structure, setStructure] = useState("");
   const [title, setTitle] = useState("");
   const [sections, setSections] = useState([]);
-  const [previewMode, setPreviewMode] = useState(false);
+  // const [previewMode, setPreviewMode] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -114,7 +114,11 @@ const AdminQuestionnaireBuilder = () => {
           <h6>{i + 1}. {s.title}</h6>
           <p>{s.description}</p>
           <ul>
-            {s.questions.map((q, qi) => (
+            {s.questions.map(
+              (q,
+              // qi
+
+              ) => (
               <li key={q.id}>
                 <strong>{q.questionText}</strong> ({q.type})<br />
                 {q.guidance && <small><em>{q.guidance}</em></small>}<br />
