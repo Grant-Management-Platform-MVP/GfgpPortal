@@ -1,240 +1,317 @@
-import React, { useState } from 'react';
-import { Button, Card, Form, Modal, Accordion } from 'react-bootstrap';
-import { v4 as uuidv4 } from 'uuid';
+import React, { useState } from "react";
+import { v4 as uuidv4 } from "uuid";
+import { ChevronDown, ChevronUp, Plus, Trash, Eye } from "lucide-react";
+import { Modal, Button } from "react-bootstrap";
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
-const structures = ['Foundation', 'Advanced', 'Tiered'];
+const AdminQuestionnaireBuilder = () => {
+  const [structure, setStructure] = useState("");
+  const [title, setTitle] = useState("");
+  const [sections, setSections] = useState([]);
+  const [previewMode, setPreviewMode] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const BASE_URL = import.meta.env.VITE_BASE_URL;
 
-const defaultQuestion = () => ({
-  id: uuidv4(),
-  questionText: '',
-  type: 'TEXT',
-  required: false,
-  options: [],
-  guidance: '',
-  uploadEvidence: false,
-  conditional: null
-});
+  const addSection = () => {
+    setSections([
+      ...sections,
+      {
+        sectionId: uuidv4(),
+        title: "",
+        description: "",
+        displayOrder: sections.length + 1,
+        questions: [],
+        expanded: true,
+      },
+    ]);
+  };
 
-const defaultSection = () => ({
-  id: uuidv4(),
-  title: '',
-  description: '',
-  displayOrder: 1,
-  questions: [defaultQuestion()]
-});
+  const removeSection = (index) => {
+    const updated = [...sections];
+    updated.splice(index, 1);
+    setSections(updated);
+  };
 
-const QuestionnaireBuilder = () => {
-  const [structure, setStructure] = useState('');
-  const [version, setVersion] = useState('');
-  const [sections, setSections] = useState([defaultSection()]);
-  const [showPreview, setShowPreview] = useState(false);
+  const toggleSection = (index) => {
+    const updated = [...sections];
+    updated[index].expanded = !updated[index].expanded;
+    setSections(updated);
+  };
 
-  const updateSection = (index, field, value) => {
+  const updateSectionField = (index, field, value) => {
     const updated = [...sections];
     updated[index][field] = value;
     setSections(updated);
   };
 
-  const addSection = () => {
-    setSections([...sections, defaultSection()]);
-  };
-
-  const removeSection = (index) => {
-    const updated = sections.filter((_, i) => i !== index);
-    setSections(updated);
-  };
-
-  const updateQuestion = (sIndex, qIndex, field, value) => {
+  const addQuestion = (sectionIndex) => {
     const updated = [...sections];
-    updated[sIndex].questions[qIndex][field] = value;
+    updated[sectionIndex].questions.push({
+      id: uuidv4(),
+      questionCode: "",
+      questionText: "",
+      type: "TEXT",
+      required: false,
+      options: [],
+      guidance: "",
+      uploadEvidence: false,
+      conditional: null,
+      typeConfig: {},
+    });
     setSections(updated);
   };
 
-  const addQuestion = (sIndex) => {
+  const updateQuestionField = (sectionIndex, questionIndex, field, value) => {
     const updated = [...sections];
-    updated[sIndex].questions.push(defaultQuestion());
+    updated[sectionIndex].questions[questionIndex][field] = value;
     setSections(updated);
   };
 
-  const removeQuestion = (sIndex, qIndex) => {
+  const removeQuestion = (sectionIndex, questionIndex) => {
     const updated = [...sections];
-    updated[sIndex].questions.splice(qIndex, 1);
+    updated[sectionIndex].questions.splice(questionIndex, 1);
     setSections(updated);
   };
 
-  const handlePreview = () => setShowPreview(true);
-  const closePreview = () => setShowPreview(false);
+  const handleSubmit = async () => {
+    const versionCode = `${structure.toUpperCase()}_${String(Math.floor(Math.random() * 999)).padStart(3, "0")}`;
 
-  const handleSubmit = () => {
     const payload = {
       structure,
-      version,
-      sections
+      title,
+      templateCode: versionCode,
+      version: "1.0",
+      contentJson: {
+        templateCode: versionCode,
+        version: "1.0",
+        sections: sections.map(({ ...s }) => s),
+      },
     };
-    console.log('Final Questionnaire JSON:', JSON.stringify(payload, null, 2));
-    // Send to backend here
+
+    const res = await fetch(BASE_URL +"gfgp/questionnaire-templates/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      toast.success("Questionnaire template created successfully.");
+      setStructure("");
+      setTitle("");
+      setSections([]);
+    } else {
+      toast.error("Failed to create template.");
+    }
   };
 
-  return (
-    <div className="container mt-5">
-      <Card className="p-4 shadow">
-        <h3 className="mb-4">GFGP Questionnaire Builder</h3>
-
-        <Form.Group className="mb-3">
-          <Form.Label>Structure</Form.Label>
-          <Form.Select value={structure} onChange={(e) => setStructure(e.target.value)}>
-            <option value="">Select structure</option>
-            {structures.map((s) => (
-              <option key={s}>{s}</option>
+  const renderPreview = () => (
+    <>
+      <h5>{title}</h5>
+      <p><strong>Structure:</strong> {structure}</p>
+      {sections.map((s, i) => (
+        <div key={s.sectionId} className="mb-3">
+          <h6>{i + 1}. {s.title}</h6>
+          <p>{s.description}</p>
+          <ul>
+            {s.questions.map((q, qi) => (
+              <li key={q.id}>
+                <strong>{q.questionText}</strong> ({q.type})<br />
+                {q.guidance && <small><em>{q.guidance}</em></small>}<br />
+                {q.options && q.options.length > 0 && (
+                  <ul>
+                    {q.options.map((opt, oi) => <li key={oi}>{opt}</li>)}
+                  </ul>
+                )}
+                {q.uploadEvidence && <small className="text-success">Requires evidence upload</small>}
+                {q.conditional && (
+                  <div><small>Shown if <strong>{q.conditional.questionId}</strong> is {q.conditional.showIf.join(", ")}</small></div>
+                )}
+              </li>
             ))}
-          </Form.Select>
-        </Form.Group>
+          </ul>
+        </div>
+      ))}
+    </>
+  );
 
-        <Form.Group className="mb-3">
-          <Form.Label>Version</Form.Label>
-          <Form.Control
-            placeholder="e.g., v1.0, v2.1"
-            value={version}
-            onChange={(e) => setVersion(e.target.value)}
-          />
-        </Form.Group>
+  return (
+    <div className="container py-4">
+      <h1 className="mb-4 h3">Create Questionnaire</h1>
 
-        <Accordion defaultActiveKey="0">
-          {sections.map((section, sIndex) => (
-            <Accordion.Item eventKey={sIndex.toString()} key={section.id}>
-              <Accordion.Header>Section {sIndex + 1}: {section.title || 'Untitled'}</Accordion.Header>
-              <Accordion.Body>
-                <Form.Group className="mb-2">
-                  <Form.Label>Title</Form.Label>
-                  <Form.Control
-                    value={section.title}
-                    onChange={(e) => updateSection(sIndex, 'title', e.target.value)}
-                  />
-                </Form.Group>
+      <div className="mb-3">
+        <label className="form-label">Structure</label>
+        <select
+          className="form-select"
+          value={structure}
+          onChange={(e) => setStructure(e.target.value)}
+        >
+          <option value="">Select structure</option>
+          <option value="foundation">Foundation</option>
+          <option value="advanced">Advanced</option>
+          <option value="tiered">Tiered</option>
+        </select>
+      </div>
 
-                <Form.Group className="mb-2">
-                  <Form.Label>Description</Form.Label>
-                  <Form.Control
-                    value={section.description}
-                    onChange={(e) => updateSection(sIndex, 'description', e.target.value)}
-                  />
-                </Form.Group>
+      <div className="mb-3">
+        <label className="form-label">Questionnaire Title</label>
+        <input
+          type="text"
+          className="form-control"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="e.g., GFGP Advanced Template v1"
+        />
+      </div>
 
-                {section.questions.map((q, qIndex) => (
-                  <Card key={q.id} className="mb-3 p-3">
-                    <h6>Question {qIndex + 1}</h6>
-                    <Form.Group className="mb-2">
-                      <Form.Label>Text</Form.Label>
-                      <Form.Control
-                        value={q.questionText}
-                        onChange={(e) =>
-                          updateQuestion(sIndex, qIndex, 'questionText', e.target.value)
-                        }
+      <div className="mb-4">
+        <div className="d-flex justify-content-between align-items-center mb-2">
+          <h5 className="mb-0">Sections</h5>
+          <button className="btn btn-sm btn-primary" onClick={addSection}>
+            <Plus size={16} className="me-1" /> Add Section
+          </button>
+        </div>
+
+        {sections.map((section, sectionIndex) => (
+          <div key={section.sectionId} className="card mb-3">
+            <div className="card-header d-flex justify-content-between align-items-center">
+              <strong>Section {sectionIndex + 1}</strong>
+              <div>
+                <button
+                  className="btn btn-sm btn-outline-secondary me-2"
+                  onClick={() => toggleSection(sectionIndex)}
+                >
+                  {section.expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+                <button
+                  className="btn btn-sm btn-outline-danger"
+                  onClick={() => removeSection(sectionIndex)}
+                >
+                  <Trash size={16} />
+                </button>
+              </div>
+            </div>
+            {section.expanded && (
+              <div className="card-body">
+                <input
+                  className="form-control mb-2"
+                  placeholder="Section Title"
+                  value={section.title}
+                  onChange={(e) => updateSectionField(sectionIndex, "title", e.target.value)}
+                />
+                <textarea
+                  className="form-control mb-3"
+                  placeholder="Section Description"
+                  value={section.description}
+                  onChange={(e) => updateSectionField(sectionIndex, "description", e.target.value)}
+                />
+
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <strong>Questions</strong>
+                  <button
+                    className="btn btn-sm btn-success"
+                    onClick={() => addQuestion(sectionIndex)}
+                  >
+                    <Plus size={16} className="me-1" /> Add Question
+                  </button>
+                </div>
+
+                {section.questions.map((q, questionIndex) => (
+                  <div key={q.id} className="border p-3 rounded bg-light mb-3">
+                    <input
+                      className="form-control mb-2"
+                      placeholder="Question Text"
+                      value={q.questionText}
+                      onChange={(e) => updateQuestionField(sectionIndex, questionIndex, "questionText", e.target.value)}
+                    />
+                    <input
+                      className="form-control mb-2"
+                      placeholder="Question Code"
+                      value={q.questionCode}
+                      onChange={(e) => updateQuestionField(sectionIndex, questionIndex, "questionCode", e.target.value)}
+                    />
+                    <select
+                      className="form-select mb-2"
+                      value={q.type}
+                      onChange={(e) => updateQuestionField(sectionIndex, questionIndex, "type", e.target.value)}
+                    >
+                      <option value="TEXT">Text</option>
+                      <option value="SINGLE_CHOICE">Single Choice</option>
+                      <option value="MULTI_CHOICE">Multiple Choice</option>
+                      <option value="FILE_UPLOAD">File Upload</option>
+                    </select>
+                    {(q.type === "SINGLE_CHOICE" || q.type === "MULTI_CHOICE") && (
+                      <input
+                        className="form-control mb-2"
+                        placeholder="Comma-separated options"
+                        value={q.options.join(", ")}
+                        onChange={(e) => updateQuestionField(sectionIndex, questionIndex, "options", e.target.value.split(",").map(o => o.trim()))}
                       />
-                    </Form.Group>
-
-                    <Form.Group className="mb-2">
-                      <Form.Label>Type</Form.Label>
-                      <Form.Select
-                        value={q.type}
-                        onChange={(e) => updateQuestion(sIndex, qIndex, 'type', e.target.value)}
-                      >
-                        <option value="TEXT">Text</option>
-                        <option value="SINGLE_CHOICE">Single Choice</option>
-                        <option value="MULTIPLE_CHOICE">Multiple Choice</option>
-                        <option value="FILE_UPLOAD">File Upload</option>
-                      </Form.Select>
-                    </Form.Group>
-
-                    {(q.type === 'SINGLE_CHOICE' || q.type === 'MULTIPLE_CHOICE') && (
-                      <Form.Group className="mb-2">
-                        <Form.Label>Options (comma separated)</Form.Label>
-                        <Form.Control
-                          value={q.options.join(', ')}
-                          onChange={(e) =>
-                            updateQuestion(sIndex, qIndex, 'options', e.target.value.split(',').map(opt => opt.trim()))
-                          }
-                        />
-                      </Form.Group>
                     )}
-
-                    <Form.Group className="mb-2">
-                      <Form.Check
-                        label="Required?"
+                    <textarea
+                      className="form-control mb-2"
+                      placeholder="Guidance (optional)"
+                      value={q.guidance}
+                      onChange={(e) => updateQuestionField(sectionIndex, questionIndex, "guidance", e.target.value)}
+                    />
+                    <div className="form-check mb-2">
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
                         checked={q.required}
-                        onChange={(e) =>
-                          updateQuestion(sIndex, qIndex, 'required', e.target.checked)
-                        }
+                        onChange={(e) => updateQuestionField(sectionIndex, questionIndex, "required", e.target.checked)}
                       />
-                    </Form.Group>
-
-                    <Form.Group className="mb-2">
-                      <Form.Label>Guidance</Form.Label>
-                      <Form.Control
-                        placeholder="e.g. Include governing board..."
-                        value={q.guidance}
-                        onChange={(e) => updateQuestion(sIndex, qIndex, 'guidance', e.target.value)}
+                      <label className="form-check-label">Required</label>
+                    </div>
+                    <div className="form-check mb-2">
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
+                        checked={q.uploadEvidence}
+                        onChange={(e) => updateQuestionField(sectionIndex, questionIndex, "uploadEvidence", e.target.checked)}
                       />
-                    </Form.Group>
-
-                    {q.type !== 'FILE_UPLOAD' && (
-                      <Form.Group className="mb-2">
-                        <Form.Check
-                          label="Upload Evidence?"
-                          checked={q.uploadEvidence}
-                          onChange={(e) =>
-                            updateQuestion(sIndex, qIndex, 'uploadEvidence', e.target.checked)
-                          }
-                        />
-                      </Form.Group>
-                    )}
-
-                    <Button
-                      variant="outline-danger"
-                      size="sm"
-                      onClick={() => removeQuestion(sIndex, qIndex)}
+                      <label className="form-check-label">Requires Evidence Upload</label>
+                    </div>
+                    <button
+                      className="btn btn-sm btn-danger"
+                      onClick={() => removeQuestion(sectionIndex, questionIndex)}
                     >
                       Remove Question
-                    </Button>
-                  </Card>
+                    </button>
+                  </div>
                 ))}
-
-                <Button variant="outline-primary" onClick={() => addQuestion(sIndex)} className="me-2">
-                  + Add Question
-                </Button>
-                <Button variant="outline-danger" onClick={() => removeSection(sIndex)}>
-                  Delete Section
-                </Button>
-              </Accordion.Body>
-            </Accordion.Item>
-          ))}
-        </Accordion>
-
-        <div className="mt-4 d-flex justify-content-between">
-          <Button variant="secondary" onClick={addSection}>+ Add Section</Button>
-          <div>
-            <Button variant="info" className="me-2" onClick={handlePreview}>Preview</Button>
-            <Button variant="success" onClick={handleSubmit}>Save Questionnaire</Button>
+              </div>
+            )}
           </div>
-        </div>
-      </Card>
+        ))}
+      </div>
 
-      {/* Preview Modal */}
-      <Modal show={showPreview} onHide={closePreview} size="lg">
+      <div className="d-flex gap-3 mb-3">
+        <button className="btn btn-outline-secondary" onClick={() => setShowModal(true)}>
+          <Eye className="me-1" size={16} /> Preview
+        </button>
+        <button
+          className="btn btn-primary"
+          onClick={handleSubmit}
+          disabled={!structure || !title || sections.length === 0}
+        >
+          Submit Questionnaire
+        </button>
+      </div>
+
+      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
         <Modal.Header closeButton>
-          <Modal.Title>Questionnaire Preview</Modal.Title>
+          <Modal.Title>Preview Template</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
-          <pre style={{ whiteSpace: 'pre-wrap' }}>
-            {JSON.stringify({ structure, version, sections }, null, 2)}
-          </pre>
-        </Modal.Body>
+        <Modal.Body>{renderPreview()}</Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={closePreview}>Close</Button>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>
+            Close
+          </Button>
         </Modal.Footer>
       </Modal>
     </div>
   );
 };
 
-export default QuestionnaireBuilder;
+export default AdminQuestionnaireBuilder;
