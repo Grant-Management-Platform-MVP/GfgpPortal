@@ -35,7 +35,7 @@ const DashboardLayout = ({ title, children, userRole }) => {
         return [
           { path: '/admin/users', label: 'User Managment' },
           { path: '/admin/settings', label: 'System Settings' },
-          { path: '/admin/questionnaire', label: 'Questionnaire Editor' },
+          { path: '/admin/questionnaire-management', label: 'Questionnaire Management' },
           { path: '/admin/documents', label: 'Version Control' },
           { path: '/admin/reports', label: 'Reports & Exports' },
           { path: '/admin/translations', label: 'Manage Translations' }
