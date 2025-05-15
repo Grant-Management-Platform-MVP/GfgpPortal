@@ -19,20 +19,28 @@ function LoginForm() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
-        credentials: 'include'
       });
 
       const contentType = res.headers.get("content-type");
       let errorMessage = 'Login failed. Wrong username or password.';
 
       if (!res.ok) {
-        if (contentType?.includes("application/json")) {
-          const errorData = await res.json();
-          errorMessage = errorData.message || errorMessage;
-        } else {
-          const text = await res.text();
-          errorMessage = text || errorMessage;
+        try {
+          if (contentType?.includes("application/json")) {
+            const errorData = await res.json();
+            if (errorData?.message) {
+              errorMessage = errorData.message;
+            }
+          } else {
+            const text = await res.text();
+            if (text) {
+              errorMessage = text;
+            }
+          }
+        } catch (parseErr) {
+          console.error('Error parsing error response:', parseErr);
         }
+
         toast.error(errorMessage);
         setLoading(false);
         return;
@@ -48,10 +56,10 @@ function LoginForm() {
             if (!user.hasSelectedStructure) {
               navigate('/grantee/select-structure');
             } else {
-                const storedUser = JSON.parse(localStorage.getItem('user'));
-                const gfgpStructure = storedUser?.selectedStructure || storedUser?.userId;
-                localStorage.setItem('gfgpStructure', gfgpStructure);
-                navigate('/grantee');
+              const storedUser = JSON.parse(localStorage.getItem('user'));
+              const gfgpStructure = storedUser?.selectedStructure || storedUser?.userId;
+              localStorage.setItem('gfgpStructure', gfgpStructure);
+              navigate('/grantee');
             }
             break;
           case 'GRANTOR':
@@ -68,16 +76,15 @@ function LoginForm() {
         }
         setLoading(false);
       }, 500);
-
     } catch (err) {
       console.error('Login error:', err);
-      toast.error('Something went wrong');
+      toast.error('Something went wrong. Please try again.');
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="needs-validation" noValidate>
+    <form onSubmit={handleSubmit} className="needs-validation" noValidate autoComplete='off'>
       <div className="form-floating mb-3">
         <input
           type="text"
