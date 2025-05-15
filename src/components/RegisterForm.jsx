@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { toast } from "react-toastify";
+import {Form} from "react-bootstrap";;
+
 
 const DEFAULT_FORM = {
   fullName: "",
@@ -10,10 +12,12 @@ const DEFAULT_FORM = {
   orgName: "",
   orgType: "",
   registrationNumbers: [""],
+  requestedRole: "",
 };
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
-const RegisterForm = () => {
+
+const RegisterForm = ({ onRegistrationSuccess }) => {
   const [formData, setFormData] = useState(DEFAULT_FORM);
   const [submitting, setSubmitting] = useState(false);
 
@@ -39,7 +43,14 @@ const RegisterForm = () => {
     }));
 
   const validateForm = () => {
-    if (formData.password !== formData.confirmPassword) {
+    const { fullName, username, email, password, confirmPassword, orgName, orgType } = formData;
+
+    if (!fullName || !username || !email || !password || !confirmPassword || !orgName || !orgType) {
+      toast.error("Please fill all required fields.");
+      return false;
+    }
+
+    if (password !== confirmPassword) {
       toast.error("Passwords do not match.");
       return false;
     }
@@ -59,21 +70,33 @@ const RegisterForm = () => {
 
     setSubmitting(true);
 
-    try {
+  try {
       const res = await fetch(BASE_URL + "auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
-      const text = await res.text();
-
       if (res.ok) {
         toast.success("Your registration has been submitted and is pending approval.");
         setFormData(DEFAULT_FORM);
-        setTimeout(() => window.location.reload(), 2500);
+
+        if (typeof onRegistrationSuccess === "function") {
+          onRegistrationSuccess();
+        }
       } else {
-        toast.error("Registration failed: " + text);
+        let errorMessage = "Registration failed";
+
+        try {
+          const errorData = await res.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (jsonError) {
+          console.error("Failed to parse error response as JSON:", jsonError);
+          const errorText = await res.text();
+          errorMessage = errorText || errorMessage;
+        }
+
+        toast.error("Registration failed: "+errorMessage);
       }
     } catch (err) {
       toast.error("Registration failed: " + err.message);
@@ -83,7 +106,7 @@ const RegisterForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-3">
+    <form onSubmit={handleSubmit} className="p-3" autoComplete='off'>
       <div className="row">
         <div className="col-md-6">
           {/* Full Name */}
@@ -165,22 +188,21 @@ const RegisterForm = () => {
               required
             />
           </div>
-
-          {/* Organization Type */}
-          <div className="mb-3">
-            <label className="form-label">Organization Type</label>
+        </div>
+      </div>
+      {/* Organization Type */}
+        <div className="mb-3">
+          <label className="form-label">Organization Type</label>
             <input
               type="text"
               name="orgType"
-              className="form-control"
+              className="form-control me-2"
+              placeholder="e.g., Non-Profit, Government, etc."
               value={formData.orgType}
               onChange={handleChange}
               required
             />
-          </div>
         </div>
-      </div>
-
       {/* Registration Numbers */}
       <div className="mb-3">
         <label className="form-label">Registration Numbers</label>
@@ -212,6 +234,22 @@ const RegisterForm = () => {
           + Add Another
         </button>
       </div>
+      <Form.Group controlId="role" className="mb-3">
+        <Form.Label>Register as</Form.Label>
+        <Form.Select
+          name="requestedRole"
+          value={formData.requestedRole}
+          onChange={handleChange}
+          required
+          className="form-control"
+        >
+          <option value="">-- Select Role --</option>
+          <option value="GRANTEE">Grantee</option>
+          <option value="AUDITOR">Auditor</option>
+          <option value="GRANTOR">Grantor</option>
+        </Form.Select>
+      </Form.Group>
+
 
       <button
         type="submit"
