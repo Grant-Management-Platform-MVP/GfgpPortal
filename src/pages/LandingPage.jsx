@@ -5,6 +5,9 @@ import { FaSignInAlt, FaUserPlus } from 'react-icons/fa';
 
 const LandingPage = () => {
   const [activeTab, setActiveTab] = useState('login');
+  const handleRegistrationSuccess = () => {
+    setActiveTab("login"); // switch to login tab
+  };
 
   return (
     <div className="container min-vh-100 d-flex flex-column justify-content-center align-items-center">
@@ -42,7 +45,7 @@ const LandingPage = () => {
 
         <div className="tab-content">
           <div className="tab-pane fade show active">
-            {activeTab === 'login' ? <LoginForm /> : <RegisterForm />}
+            {activeTab === 'login' ? <LoginForm /> : <RegisterForm onRegistrationSuccess={handleRegistrationSuccess} />}
           </div>
         </div>
       </div>
