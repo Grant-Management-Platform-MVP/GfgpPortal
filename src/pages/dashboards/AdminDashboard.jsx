@@ -4,6 +4,8 @@ import { Routes, Route, Link } from 'react-router-dom';
 import Profile from '@common/ProfilePage';
 import UserManagement from '@pages/admin/UserManagement';
 import AdminQuestionnaireBuilder from '@components/questionnaires/QuestionnaireBuilder';
+import TemplateList from '@components/questionnaires/TemplateList';
+import QuestionnaireEditor from '@components/questionnaires/QuestionnaireEditor';
 
 const AdminDashboard = () => {
   return (
@@ -11,7 +13,10 @@ const AdminDashboard = () => {
       <Routes>
         <Route path="profile" element={<Profile />} />
         <Route path="users" element={<UserManagement />} />
-        <Route path="questionnaire-management" element={<AdminQuestionnaireBuilder/>} />
+        <Route path="questionnaire-creation" element={<AdminQuestionnaireBuilder/>} />
+        <Route path="questionnaire-management" element={<TemplateList />} />
+        <Route path="questionnaire-editor/:id" element={<QuestionnaireEditor />} />
+
       </Routes>
     </DashboardLayout>
   );
