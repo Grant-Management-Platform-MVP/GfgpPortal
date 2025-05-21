@@ -73,3 +73,87 @@ button:focus-visible {
         background-color: #f9f9f9;
     }
 }
+
+.collapsed-sidebar .nav-link {
+    justify-content: center;
+    text-align: center;
+}
+
+.collapsed-sidebar .nav-link .bi {
+    margin-right: 0 !important;
+}
+
+
+/* dark mode toggle, active link animations */
+
+
+/* Sidebar active link effect */
+
+.sidebar-link {
+    transition: all 0.2s ease-in-out;
+    border-radius: 4px;
+    padding: 8px 12px;
+}
+
+.sidebar-link.active {
+    background-color: #0d6efd !important;
+    color: white !important;
+    font-weight: 600;
+    position: relative;
+}
+
+.sidebar-link.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background-color: #ffc107;
+    border-radius: 2px;
+}
+
+
+/* Collapse effects */
+
+.collapsed-sidebar .nav-link {
+    justify-content: center;
+    text-align: center;
+}
+
+.collapsed-sidebar .nav-link .bi {
+    margin-right: 0 !important;
+}
+
+
+/* Dark mode enhancements */
+
+body.dark-mode {
+    background-color: #121212 !important;
+    color: #f8f9fa;
+}
+
+body.dark-mode .sidebar {
+    background-color: #1e1e1e !important;
+}
+
+body.dark-mode .nav-link {
+    color: #ced4da !important;
+}
+
+body.dark-mode .nav-link.active {
+    background-color: #0d6efd !important;
+}
+
+body.dark-mode .navbar {
+    background-color: #222 !important;
+}
+
+body.dark-mode .btn-outline-primary {
+    border-color: #6c757d;
+    color: #dee2e6;
+}
+
+body.dark-mode .btn-outline-primary:hover {
+    background-color: #495057;
+    color: white;
+}
