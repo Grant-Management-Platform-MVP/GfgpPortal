@@ -8,8 +8,12 @@ import AdminDashboard from './pages/dashboards/AdminDashboard';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ProtectedRoute from './components/ProtectedRoute';
+import SessionTimeoutWarning from './SessionTimeoutWarning';
 
 function App() {
+    const handleLogout = () => {
+      window.location.href = '/login';
+    };
   return (
     <Router>
       <ToastContainer position="top-right" autoClose={5000} />
@@ -43,6 +47,7 @@ function App() {
 
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
+      <SessionTimeoutWarning onLogout={handleLogout} />
     </Router>
   );
 }
