@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import {Spinner, Container, ProgressBar, Card, Form, Button, Alert } from "react-bootstrap";
+import { Spinner, Container, ProgressBar, Card, Form, Button, Alert } from "react-bootstrap";
 
 const DynamicQuestionnaireForm = () => {
   const [template, setTemplate] = useState(null);
@@ -52,8 +52,8 @@ const DynamicQuestionnaireForm = () => {
             }
           }
         } catch (draftErr) {
-            console.warn("No draft found — starting fresh.", draftErr);
-            if (isMounted) setAnswers({});
+          console.warn("No draft found — starting fresh.", draftErr);
+          if (isMounted) setAnswers({});
         }
         // >> Check if already submitted
         try {
@@ -253,7 +253,7 @@ const DynamicQuestionnaireForm = () => {
   }
 
   // Progress bar calculation
-    const allVisibleQuestions = template.sections
+  const allVisibleQuestions = template.sections
     .flatMap(section => section.questions)
     .filter(shouldShowQuestion);
 
