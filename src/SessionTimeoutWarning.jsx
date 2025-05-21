@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Modal, Button } from 'react-bootstrap';
 
-const SESSION_TIMEOUT = 5 * 60 * 1000; // 5 minutes in ms
+const SESSION_TIMEOUT = 15 * 60 * 1000; // 5 minutes in ms
 const WARNING_TIME = 1 * 60 * 1000; // 1 minute before timeout
 
 const SessionTimeoutWarning = ({ onLogout }) => {
