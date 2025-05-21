@@ -16,6 +16,7 @@ const DynamicQuestionnaireForm = () => {
   const user = JSON.parse(localStorage.getItem("user"));
   const userId = user?.userId;
   const structure = localStorage.getItem("gfgpStructure");
+  const FIXED_OPTIONS = ["Yes", "In-progress", "No", "Not Applicable"];
 
   useEffect(() => {
     let isMounted = true;
@@ -104,11 +105,6 @@ const DynamicQuestionnaireForm = () => {
     return () => clearTimeout(debounce);
   }, [answers]);
 
-  const handleChange = (questionId, value) => {
-    setHasInteracted(true);
-    setAnswers(prev => ({ ...prev, [questionId]: value }));
-  };
-
   const shouldShowQuestion = question => {
     if (!question.conditional) return true;
     const { questionId, showIf } = question.conditional;
@@ -136,87 +132,78 @@ const DynamicQuestionnaireForm = () => {
     }
   };
 
-  const renderInput = question => {
+  const renderInput = (question) => {
     const disabled = isLocked;
+    const response = answers[question.id] || {};
 
-    switch (question.type) {
-      case "TEXT":
-        return (
-          <Form.Control
-            type="text"
-            maxLength={question.typeConfig?.maxLength || 255}
-            value={answers[question.id] || ""}
-            onChange={e => handleChange(question.id, e.target.value)}
-            disabled={disabled}
-          />
-        );
-      case "TEXTAREA":
-        return (
-          <Form.Control
-            as="textarea"
-            rows={3}
-            value={answers[question.id] || ""}
-            onChange={e => handleChange(question.id, e.target.value)}
-            disabled={disabled}
-          />
-        );
-      case "NUMBER":
-        return (
-          <Form.Control
-            type="number"
-            value={answers[question.id] || ""}
-            onChange={e => handleChange(question.id, e.target.value)}
-            disabled={disabled}
-          />
-        );
-      case "SINGLE_CHOICE":
-      case "RADIO":
-        return question.options.map((opt, idx) => (
+    const handleAnswerChange = (value) => {
+      setHasInteracted(true);
+      setAnswers((prev) => ({
+        ...prev,
+        [question.id]: {
+          ...prev[question.id],
+          answer: value,
+          ...(value !== "Not Applicable" ? { justification: "" } : {})
+        },
+      }));
+    };
+
+    return (
+      <>
+        {FIXED_OPTIONS.map((opt) => (
           <Form.Check
-            key={idx}
+            key={opt}
             type="radio"
             name={question.id}
             label={opt}
             value={opt}
-            checked={answers[question.id] === opt}
-            onChange={e => handleChange(question.id, e.target.value)}
+            checked={response.answer === opt}
+            onChange={(e) => handleAnswerChange(e.target.value)}
             disabled={disabled}
           />
-        ));
-      case "CHECKBOX":
-        return question.options.map((opt, idx) => (
-          <Form.Check
-            key={idx}
-            type="checkbox"
-            label={opt}
-            checked={answers[question.id]?.includes(opt) || false}
-            onChange={e => {
-              const current = answers[question.id] || [];
-              const updated = e.target.checked
-                ? [...current, opt]
-                : current.filter(v => v !== opt);
-              handleChange(question.id, updated);
-            }}
+        ))}
+
+        {response.answer === "Not Applicable" && (
+          <Form.Control
+            as="textarea"
+            rows={2}
+            placeholder="Provide justification for N/A"
+            value={response.justification || ""}
+            onChange={(e) =>
+              setAnswers((prev) => ({
+                ...prev,
+                [question.id]: {
+                  ...prev[question.id],
+                  justification: e.target.value,
+                },
+              }))
+            }
+            className="mt-2"
             disabled={disabled}
           />
-        ));
-      case "FILE_UPLOAD":
-        return (
+        )}
+
+        {response.answer === "Yes" && question.uploadEvidence && (
           <Form.Control
             type="file"
-            onChange={e => {
+            className="mt-2"
+            onChange={(e) => {
               const file = e.target.files[0];
               if (file) {
-                console.warn("File upload stubbed — storing file name only.");
-                handleChange(question.id, file.name);
+                setAnswers((prev) => ({
+                  ...prev,
+                  [question.id]: {
+                    ...prev[question.id],
+                    evidence: file.name, // Simulated for now
+                  },
+                }));
               }
             }}
             disabled={disabled}
           />
-        );
-      default:
-        return <p className="text-danger">Unsupported type: {question.type}</p>;
-    }
+        )}
+      </>
+    );
   };
 
   if (!userId || !structure) {

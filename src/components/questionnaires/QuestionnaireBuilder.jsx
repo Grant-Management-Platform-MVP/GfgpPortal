@@ -5,32 +5,45 @@ import { Modal, Button } from "react-bootstrap";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+const FIXED_OPTIONS = ["Yes", "In-progress", "No", "Not Applicable"];
+
 const AdminQuestionnaireBuilder = () => {
   const [structure, setStructure] = useState("");
   const [title, setTitle] = useState("");
   const [sections, setSections] = useState([]);
-  // const [previewMode, setPreviewMode] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const BASE_URL = import.meta.env.VITE_BASE_URL;
 
   const addSection = () => {
-    setSections([
-      ...sections,
-      {
-        sectionId: uuidv4(),
-        title: "",
-        description: "",
-        displayOrder: sections.length + 1,
-        questions: [],
-        expanded: true,
-      },
-    ]);
+  const newSections = [
+    ...sections,
+    {
+      sectionId: uuidv4(),
+      title: "",
+      description: "",
+      weight: 0,
+      displayOrder: sections.length + 1,
+      questions: [],
+      expanded: true,
+    },
+  ];
+  setSections(recalculateSectionWeights(newSections));
+};
+
+  const recalculateSectionWeights = (sections) => {
+    const count = sections.length;
+    if (count === 0) return sections;
+    const weightPerSection = parseFloat((100 / count).toFixed(2));
+    return sections.map((section) => ({
+      ...section,
+      weight: weightPerSection,
+    }));
   };
 
   const removeSection = (index) => {
     const updated = [...sections];
     updated.splice(index, 1);
-    setSections(updated);
+    setSections(recalculateSectionWeights(updated));
   };
 
   const toggleSection = (index) => {
@@ -51,13 +64,17 @@ const AdminQuestionnaireBuilder = () => {
       id: uuidv4(),
       questionCode: "",
       questionText: "",
-      type: "TEXT",
-      required: false,
-      options: [],
+      type: "SINGLE_CHOICE",
+      required: true,
+      options: [...FIXED_OPTIONS],
       guidance: "",
-      uploadEvidence: false,
       conditional: null,
-      typeConfig: {},
+      uploadEvidence: false,
+      userResponse: {
+        answer: "",
+        justification: "",
+        evidence: null,
+      },
     });
     setSections(updated);
   };
@@ -89,7 +106,7 @@ const AdminQuestionnaireBuilder = () => {
       },
     };
 
-    const res = await fetch(BASE_URL +"gfgp/questionnaire-templates/create", {
+    const res = await fetch(BASE_URL + "gfgp/questionnaire-templates/create", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -111,22 +128,14 @@ const AdminQuestionnaireBuilder = () => {
       <p><strong>Structure:</strong> {structure}</p>
       {sections.map((s, i) => (
         <div key={s.sectionId} className="mb-3">
-          <h6>{i + 1}. {s.title}</h6>
+          <h6>{i + 1}. {s.title} (Weight: {s.weight}%)</h6>
           <p>{s.description}</p>
           <ul>
-            {s.questions.map(
-              (q,
-              // qi
-
-              ) => (
+            {s.questions.map((q) => (
               <li key={q.id}>
                 <strong>{q.questionText}</strong> ({q.type})<br />
                 {q.guidance && <small><em>{q.guidance}</em></small>}<br />
-                {q.options && q.options.length > 0 && (
-                  <ul>
-                    {q.options.map((opt, oi) => <li key={oi}>{opt}</li>)}
-                  </ul>
-                )}
+                {q.options.map((opt, i) => <span key={i} className="me-2">{opt}</span>)}<br />
                 {q.uploadEvidence && <small className="text-success">Requires evidence upload</small>}
                 {q.conditional && (
                   <div><small>Shown if <strong>{q.conditional.questionId}</strong> is {q.conditional.showIf.join(", ")}</small></div>
@@ -142,14 +151,9 @@ const AdminQuestionnaireBuilder = () => {
   return (
     <div className="container py-4">
       <h1 className="mb-4 h3">Create Questionnaire</h1>
-
       <div className="mb-3">
         <label className="form-label">Structure</label>
-        <select
-          className="form-select"
-          value={structure}
-          onChange={(e) => setStructure(e.target.value)}
-        >
+        <select className="form-select" value={structure} onChange={(e) => setStructure(e.target.value)}>
           <option value="">Select structure</option>
           <option value="foundation">Foundation</option>
           <option value="advanced">Advanced</option>
@@ -159,13 +163,7 @@ const AdminQuestionnaireBuilder = () => {
 
       <div className="mb-3">
         <label className="form-label">Questionnaire Title</label>
-        <input
-          type="text"
-          className="form-control"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="e.g., GFGP Advanced Template v1"
-        />
+        <input type="text" className="form-control" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., GFGP Advanced Template v1" />
       </div>
 
       <div className="mb-4">
@@ -181,107 +179,35 @@ const AdminQuestionnaireBuilder = () => {
             <div className="card-header d-flex justify-content-between align-items-center">
               <strong>Section {sectionIndex + 1}</strong>
               <div>
-                <button
-                  className="btn btn-sm btn-outline-secondary me-2"
-                  onClick={() => toggleSection(sectionIndex)}
-                >
+                <button className="btn btn-sm btn-outline-secondary me-2" onClick={() => toggleSection(sectionIndex)}>
                   {section.expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                 </button>
-                <button
-                  className="btn btn-sm btn-outline-danger"
-                  onClick={() => removeSection(sectionIndex)}
-                >
+                <button className="btn btn-sm btn-outline-danger" onClick={() => removeSection(sectionIndex)}>
                   <Trash size={16} />
                 </button>
               </div>
             </div>
             {section.expanded && (
               <div className="card-body">
-                <input
-                  className="form-control mb-2"
-                  placeholder="Section Title"
-                  value={section.title}
-                  onChange={(e) => updateSectionField(sectionIndex, "title", e.target.value)}
-                />
-                <textarea
-                  className="form-control mb-3"
-                  placeholder="Section Description"
-                  value={section.description}
-                  onChange={(e) => updateSectionField(sectionIndex, "description", e.target.value)}
-                />
-
+                <input className="form-control mb-2" placeholder="Section Title" value={section.title} onChange={(e) => updateSectionField(sectionIndex, "title", e.target.value)} />
+                <textarea className="form-control mb-2" placeholder="Section Description" value={section.description} onChange={(e) => updateSectionField(sectionIndex, "description", e.target.value)} />
                 <div className="d-flex justify-content-between align-items-center mb-2">
                   <strong>Questions</strong>
-                  <button
-                    className="btn btn-sm btn-success"
-                    onClick={() => addQuestion(sectionIndex)}
-                  >
+                  <button className="btn btn-sm btn-success" onClick={() => addQuestion(sectionIndex)}>
                     <Plus size={16} className="me-1" /> Add Question
                   </button>
                 </div>
 
                 {section.questions.map((q, questionIndex) => (
                   <div key={q.id} className="border p-3 rounded bg-light mb-3">
-                    <input
-                      className="form-control mb-2"
-                      placeholder="Question Text"
-                      value={q.questionText}
-                      onChange={(e) => updateQuestionField(sectionIndex, questionIndex, "questionText", e.target.value)}
-                    />
-                    <input
-                      className="form-control mb-2"
-                      placeholder="Question Code"
-                      value={q.questionCode}
-                      onChange={(e) => updateQuestionField(sectionIndex, questionIndex, "questionCode", e.target.value)}
-                    />
-                    <select
-                      className="form-select mb-2"
-                      value={q.type}
-                      onChange={(e) => updateQuestionField(sectionIndex, questionIndex, "type", e.target.value)}
-                    >
-                      <option value="TEXT">Text</option>
-                      <option value="SINGLE_CHOICE">Single Choice</option>
-                      <option value="MULTI_CHOICE">Multiple Choice</option>
-                      <option value="FILE_UPLOAD">File Upload</option>
-                    </select>
-                    {(q.type === "SINGLE_CHOICE" || q.type === "MULTI_CHOICE") && (
-                      <input
-                        className="form-control mb-2"
-                        placeholder="Comma-separated options"
-                        value={q.options.join(", ")}
-                        onChange={(e) => updateQuestionField(sectionIndex, questionIndex, "options", e.target.value.split(",").map(o => o.trim()))}
-                      />
-                    )}
-                    <textarea
-                      className="form-control mb-2"
-                      placeholder="Guidance (optional)"
-                      value={q.guidance}
-                      onChange={(e) => updateQuestionField(sectionIndex, questionIndex, "guidance", e.target.value)}
-                    />
+                    <input className="form-control mb-2" placeholder="Question Text" value={q.questionText} onChange={(e) => updateQuestionField(sectionIndex, questionIndex, "questionText", e.target.value)} />
+                    <input className="form-control mb-2" placeholder="Question Code" value={q.questionCode} onChange={(e) => updateQuestionField(sectionIndex, questionIndex, "questionCode", e.target.value)} />
+                    <textarea className="form-control mb-2" placeholder="Guidance (optional)" value={q.guidance} onChange={(e) => updateQuestionField(sectionIndex, questionIndex, "guidance", e.target.value)} />
                     <div className="form-check mb-2">
-                      <input
-                        type="checkbox"
-                        className="form-check-input"
-                        checked={q.required}
-                        onChange={(e) => updateQuestionField(sectionIndex, questionIndex, "required", e.target.checked)}
-                      />
-                      <label className="form-check-label">Required</label>
-                    </div>
-                    <div className="form-check mb-2">
-                      <input
-                        type="checkbox"
-                        className="form-check-input"
-                        checked={q.uploadEvidence}
-                        onChange={(e) => updateQuestionField(sectionIndex, questionIndex, "uploadEvidence", e.target.checked)}
-                      />
+                      <input type="checkbox" className="form-check-input" checked={q.uploadEvidence} onChange={(e) => updateQuestionField(sectionIndex, questionIndex, "uploadEvidence", e.target.checked)} />
                       <label className="form-check-label">Requires Evidence Upload</label>
                     </div>
-                    <button
-                      className="btn btn-sm btn-danger"
-                      onClick={() => removeQuestion(sectionIndex, questionIndex)}
-                    >
-                      Remove Question
-                    </button>
+                    <button className="btn btn-sm btn-danger" onClick={() => removeQuestion(sectionIndex, questionIndex)}>Remove Question</button>
                   </div>
                 ))}
               </div>
@@ -294,11 +220,7 @@ const AdminQuestionnaireBuilder = () => {
         <button className="btn btn-outline-secondary" onClick={() => setShowModal(true)}>
           <Eye className="me-1" size={16} /> Preview
         </button>
-        <button
-          className="btn btn-primary"
-          onClick={handleSubmit}
-          disabled={!structure || !title || sections.length === 0}
-        >
+        <button className="btn btn-primary" onClick={handleSubmit} disabled={!structure || !title || sections.length === 0}>
           Submit Questionnaire
         </button>
       </div>
