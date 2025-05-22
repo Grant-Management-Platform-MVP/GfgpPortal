@@ -5,6 +5,8 @@ import { Routes, Route, Link } from 'react-router-dom';
 import GrantorOverview from '@components/GrantorOverview';
 import GranteeComparison from '../../components/GranteeComparison';
 import AuditLogs from '../../components/AuditLogs';
+import ComplianceReportsWrapper from '../../components/ComplianceReportsWrapper';
+import SharedReportsList from '../../components/SharedReportsList';
 
 const GrantorDashboard = () => {
   return (
@@ -14,6 +16,8 @@ const GrantorDashboard = () => {
           <Route path="grantor-overview" element={<GrantorOverview />} />
           <Route path="invites" element={<AssessmentInvitations />} />
           <Route path="view-assessments" element={<GranteeComparison/>} />
+          <Route path="view-report/:userId/:structure" element={<ComplianceReportsWrapper />} />
+          <Route path="shared-reports" element={<SharedReportsList />} />
           <Route path="audit-logs" element={<AuditLogs/>} />
         </Routes>
     </DashboardLayout>

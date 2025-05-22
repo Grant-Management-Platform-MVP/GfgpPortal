@@ -25,7 +25,7 @@ const STATUS_MAP = {
   "Not Applicable": { label: "N/A", variant: "secondary", points: 0 },
 };
 
-const ComplianceReports = () => {
+const ComplianceReports = ({ userId: propUserId, structure: propStructure }) => {
   const [loading, setLoading] = useState(true);
   const [template, setTemplate] = useState(null);
   const [responses, setResponses] = useState({});
@@ -35,16 +35,17 @@ const ComplianceReports = () => {
 
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const user = JSON.parse(localStorage.getItem("user"));
-  const structure = localStorage.getItem("gfgpStructure");
+  const currentUserId = propUserId || user?.userId;
+  const currentStructure = propStructure || localStorage.getItem("gfgpStructure");
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!user?.userId || !structure) return;
+      if (!user?.userId || !currentStructure) return;
 
       try {
         const [templateRes, responseRes] = await Promise.all([
-          axios.get(`${BASE_URL}gfgp/questionnaire-templates/structure/${structure}`),
-          axios.get(`${BASE_URL}gfgp/assessment-submissions/${user.userId}/${structure}`),
+          axios.get(`${BASE_URL}gfgp/questionnaire-templates/structure/${currentStructure}`),
+          axios.get(`${BASE_URL}gfgp/assessment-submissions/${currentUserId}/${currentStructure}`),
         ]);
 
         const [templateObj] = templateRes.data;
@@ -75,16 +76,18 @@ const ComplianceReports = () => {
       }
 
       //audit_logs
-          try {
-            await axios.post(`${BASE_URL}gfgp/audit/log`, {
-              userId: user.userId,
-              action: "VIEW_COMPLIANCE_REPORT",
-              details: "Grantee accessed the compliance report.",
-              structure,
-            });
-          } catch (err) {
-            console.warn("Audit log failed:", err.message);
-          }
+      if (!propUserId) {
+        try {
+          await axios.post(`${BASE_URL}gfgp/audit/log`, {
+            userId: currentUserId,
+            action: "VIEW_COMPLIANCE_REPORT",
+            details: "Grantee accessed the compliance report.",
+            structure: currentStructure,
+          });
+        } catch (err) {
+          console.warn("Audit log failed:", err.message);
+        }
+      }
     };
 
     fetchData();
@@ -151,7 +154,7 @@ const ComplianceReports = () => {
     <div className="mt-4">
       <h4>Sectionwise Compliance Report</h4>
       <p>
-        <strong>Structure:</strong> {structure}
+        <strong>Structure:</strong> {currentStructure}
       </p>
 
       {completeness !== null && compliance !== null && (

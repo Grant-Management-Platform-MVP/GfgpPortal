@@ -106,6 +106,7 @@ const getSidebarLinks = (role, hasSelectedStructure) => {
       return [
         { path: '/grantor/grantor-overview', label: 'Metrics Overview', icon: 'bi-speedometer2' },
         { path: '/grantor/invites', label: 'Assessment Invitations', icon: 'bi-envelope-paper' },
+        { path: '/grantor/shared-reports', label: 'Shared Grantee Reports', icon: 'bi-file-earmark-bar-graph' },
         { path: '/grantor/view-assessments', label: 'Grantee Assessments Comparison', icon: 'bi-people' },
         { path: '/grantor/audit-logs', label: 'Audit Logs', icon: 'bi-journal-text' },
         { path: '/grantor/risk-analysis', label: 'Risk Analysis', icon: 'bi-shield-exclamation' },
