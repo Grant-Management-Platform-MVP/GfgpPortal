@@ -14,12 +14,15 @@ const UserManagement = () => {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [loadingUserId, setLoadingUserId] = useState(null);
+
   const usersPerPage = 10;
   const BASE_URL = import.meta.env.VITE_BASE_URL;
-  const [loading, setLoading] = useState(true);
 
   const fetchUsers = async () => {
     try {
+      setLoading(true);
       const response = await fetch(BASE_URL + "admin/users");
       const data = await response.json();
       setUsers(data);
@@ -33,20 +36,21 @@ const UserManagement = () => {
   };
 
   const handleApprove = async (userId) => {
+    setLoadingUserId(userId);
     try {
       const response = await fetch(BASE_URL + `admin/${userId}/approve`, {
         method: "PATCH",
         headers: { Accept: "application/json" },
       });
 
-      if (!response.ok) {
-        throw new Error("Approval failed");
-      }
+      if (!response.ok) throw new Error("Approval failed");
 
       toast.success("User approved and notified");
-      fetchUsers();
+      fetchUsers(); // refetch list
     } catch (error) {
       toast.error("Could not approve user: " + error.message);
+    } finally {
+      setLoadingUserId(null);
     }
   };
 
@@ -85,7 +89,7 @@ const UserManagement = () => {
         </h3>
       </div>
 
-      {/* Filter Controls */}
+      {/* Filters */}
       <div className="row g-3 mb-4">
         <div className="col-auto d-flex align-items-center gap-2">
           <FaFilter />
@@ -119,7 +123,7 @@ const UserManagement = () => {
         </div>
       </div>
 
-      {/* Loader */}
+      {/* Table */}
       {loading ? (
         <div className="text-center my-5">
           <div className="spinner-border text-primary" role="status"></div>
@@ -127,7 +131,6 @@ const UserManagement = () => {
         </div>
       ) : (
         <>
-          {/* Table */}
           <div className="table-responsive shadow-sm rounded">
             <table className="table table-striped table-hover align-middle">
               <thead className="table-dark">
@@ -176,9 +179,19 @@ const UserManagement = () => {
                           <button
                             className="btn btn-sm btn-outline-success d-flex align-items-center gap-1"
                             onClick={() => handleApprove(user.id)}
+                            disabled={loadingUserId === user.id}
                           >
-                            <MdOutlineApproval />
-                            Approve
+                            {loadingUserId === user.id ? (
+                              <>
+                                <span className="spinner-border spinner-border-sm me-1" />
+                                Approving...
+                              </>
+                            ) : (
+                              <>
+                                <MdOutlineApproval />
+                                Approve
+                              </>
+                            )}
                           </button>
                         ) : (
                           <span className="text-muted">—</span>
@@ -202,8 +215,7 @@ const UserManagement = () => {
                 <FaChevronLeft /> Prev
               </button>
               <span className="text-muted small">
-                Page {currentPage} of{" "}
-                {Math.ceil(filteredUsers.length / usersPerPage)}
+                Page {currentPage} of {Math.ceil(filteredUsers.length / usersPerPage)}
               </span>
               <button
                 className="btn btn-outline-secondary btn-sm"
