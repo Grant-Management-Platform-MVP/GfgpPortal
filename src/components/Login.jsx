@@ -7,10 +7,16 @@ function LoginForm() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async e => {
     e.preventDefault();
+
+    if (!username.trim() || !password.trim()) {
+      toast.error("Please fill in both username and password.");
+      return;
+    }
     setLoading(true);
 
     try {
@@ -47,6 +53,14 @@ function LoginForm() {
       }
 
       const user = await res.json();
+      if (user.status !== 'APPROVED') {
+        toast.error('Access denied, your account is still pending approval. Please contact the administrator.');
+        setUsername('');
+        setPassword('');
+        setLoading(false);
+        return;
+      }
+
       toast.success('Login successful!');
       localStorage.setItem('user', JSON.stringify(user));
 
@@ -98,9 +112,9 @@ function LoginForm() {
         <label htmlFor="usernameInput">Username</label>
       </div>
 
-      <div className="form-floating mb-4">
+      <div className="form-floating mb-4 position-relative">
         <input
-          type="password"
+          type={showPassword ? "text" : "password"}
           className="form-control"
           id="passwordInput"
           placeholder="Password"
@@ -109,12 +123,22 @@ function LoginForm() {
           required
         />
         <label htmlFor="passwordInput">Password</label>
+
+        <button
+          type="button"
+          className="btn btn-sm btn-outline-secondary position-absolute top-50 end-0 translate-middle-y me-2"
+          onClick={() => setShowPassword(prev => !prev)}
+          tabIndex={-1}
+          style={{ zIndex: 2 }}
+        >
+          {showPassword ? "Hide" : "Show"}
+        </button>
       </div>
 
       <button
         type="submit"
         className="btn btn-primary btn-lg w-100"
-        style={{ backgroundColor: '#1E88E5' }}
+        style={{ backgroundColor: '#04ca75', border: 'none', borderRadius: '30px' }}
         disabled={loading}
       >
         {loading ? 'Logging in...' : 'Login'}
