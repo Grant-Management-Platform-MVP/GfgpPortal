@@ -11,9 +11,13 @@ import ProtectedRoute from './components/ProtectedRoute';
 import SessionTimeoutWarning from './SessionTimeoutWarning';
 
 function App() {
-    const handleLogout = () => {
-      window.location.href = '/login';
-    };
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    window.location.href = '/';
+  };
+
+  const isLoggedIn = !!localStorage.getItem('user'); // check if user is logged in
+
   return (
     <Router>
       <ToastContainer position="top-right" autoClose={5000} />
@@ -26,28 +30,25 @@ function App() {
             <GranteeDashboard />
           </ProtectedRoute>
         } />
-
         <Route path="/grantor/*" element={
           <ProtectedRoute allowedRoles={['GRANTOR']}>
             <GrantorDashboard />
           </ProtectedRoute>
         } />
-
         <Route path="/auditor/*" element={
           <ProtectedRoute allowedRoles={['AUDITOR']}>
             <AuditorDashboard />
           </ProtectedRoute>
         } />
-
         <Route path="/admin/*" element={
           <ProtectedRoute allowedRoles={['ADMIN']}>
             <AdminDashboard />
           </ProtectedRoute>
         } />
-
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
-      <SessionTimeoutWarning onLogout={handleLogout} />
+      {/* Session timeout warning */}
+      {isLoggedIn && <SessionTimeoutWarning onLogout={handleLogout} />}
     </Router>
   );
 }
