@@ -2,52 +2,72 @@ import React, { useState } from 'react';
 import LoginForm from '../components/Login';
 import RegisterForm from '../components/RegisterForm';
 import { FaSignInAlt, FaUserPlus } from 'react-icons/fa';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const LandingPage = () => {
   const [activeTab, setActiveTab] = useState('login');
+
   const handleRegistrationSuccess = () => {
-    setActiveTab("login"); // switch to login tab
+    setActiveTab("login");
   };
 
   return (
-    <div className="container min-vh-100 d-flex flex-column justify-content-center align-items-center">
-      <div className="text-center mb-4">
-        <img
-          src="https://gfgp.ai/img/logo.png"
-          alt="GFGP Logo"
-          style={{ height: 120, width: 120 }}
-          className="mb-3"
-        />
-        <h2 className="fw-bold">Welcome to the Grantee Management Platform</h2>
-      </div>
+    <div className="min-vh-100 d-flex align-items-center">
+      <div className="container">
+        <div className="row shadow-lg rounded overflow-hidden" style={{ minHeight: '80vh' }}>
 
-      <div className="card shadow-lg p-4 w-100" style={{ maxWidth: '600px' }}>
-        <ul className="nav nav-tabs nav-fill mb-4" role="tablist">
-          <li className="nav-item" role="presentation">
-            <button
-              className={`nav-link ${activeTab === 'login' ? 'active' : ''}`}
-              onClick={() => setActiveTab('login')}
-            >
-              <FaSignInAlt className="me-2" />
-              Login
-            </button>
-          </li>
-          <li className="nav-item" role="presentation">
-            <button
-              className={`nav-link ${activeTab === 'register' ? 'active' : ''}`}
-              onClick={() => setActiveTab('register')}
-            >
-              <FaUserPlus className="me-2" />
-              Register
-            </button>
-          </li>
-        </ul>
+          {/* Branding — Always visible on mobile */}
+          <div className="col-12 col-md-6 d-flex flex-column justify-content-center align-items-center text-white p-4 p-md-5" style={{ backgroundColor: '#64B5F6', borderTopLeftRadius: '30px'}}>
+            <img
+              src="https://gfgp.ai/img/logo.png"
+              alt="GFGP Logo"
+              style={{ maxHeight: '100px' }}
+              className="mb-3"
+            />
+            <h4 className="fw-bold text-center mb-2">Good Financial Grant Practice</h4>
+            <p className="text-center mb-0">Elevate Your Grant Management.</p>
+          </div>
 
-        <div className="tab-content">
-          <div className="tab-pane fade show active">
-            {activeTab === 'login' ? <LoginForm /> : <RegisterForm onRegistrationSuccess={handleRegistrationSuccess} />}
+          {/* Form Section */}
+          <div className="col-12 col-md-6 bg-white text-black p-4" style={{
+            borderBottomRightRadius: '30px'
+          }}>
+            <div className="mb-4">
+              <ul className="nav nav-tabs nav-justified" role="tablist">
+                <li className="nav-item" role="presentation">
+                  <button
+                    className={`nav-link ${activeTab === 'login' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('login')}
+                  >
+                    <FaSignInAlt className="me-2" /> Login
+                  </button>
+                </li>
+                <li className="nav-item" role="presentation">
+                  <button
+                    className={`nav-link ${activeTab === 'register' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('register')}
+                  >
+                    <FaUserPlus className="me-2" /> Register
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            <div className="tab-content">
+              <div className="tab-pane fade show active">
+                {activeTab === 'login' ? (
+                  <LoginForm />
+                ) : (
+                  <RegisterForm onRegistrationSuccess={handleRegistrationSuccess} />
+                )}
+              </div>
+            </div>
           </div>
         </div>
+
+        <footer className="text-center mt-4 text-light small">
+          &copy; {new Date().getFullYear()} GFGP Platform. All rights reserved.
+        </footer>
       </div>
     </div>
   );
