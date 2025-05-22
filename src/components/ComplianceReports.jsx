@@ -73,6 +73,18 @@ const ComplianceReports = () => {
       } finally {
         setLoading(false);
       }
+
+      //audit_logs
+          try {
+            await axios.post(`${BASE_URL}gfgp/audit/log`, {
+              userId: user.userId,
+              action: "VIEW_COMPLIANCE_REPORT",
+              details: "Grantee accessed the compliance report.",
+              structure,
+            });
+          } catch (err) {
+            console.warn("Audit log failed:", err.message);
+          }
     };
 
     fetchData();
