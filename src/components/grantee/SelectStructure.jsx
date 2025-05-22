@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import { Spinner } from 'react-bootstrap';
-import { FaCubes, FaBrain, FaLayerGroup } from 'react-icons/fa';
+import { Spinner, Alert, Badge } from 'react-bootstrap';
 import { toast } from 'react-toastify';
+import { FaCubes, FaBrain, FaLayerGroup } from 'react-icons/fa';
 import 'react-toastify/dist/ReactToastify.css';
 
 const GFGP_OPTIONS = [
@@ -13,6 +12,7 @@ const GFGP_OPTIONS = [
     description: 'Basic controls for smaller organizations. Suitable for grantees with minimal operational complexity.',
     color: '#007bff',
     icon: <FaCubes size={28} />,
+    badge: 'Best for small orgs',
   },
   {
     id: 'advanced',
@@ -20,6 +20,7 @@ const GFGP_OPTIONS = [
     description: 'Includes all Foundation controls plus enhanced governance and financial risk controls.',
     color: '#28a745',
     icon: <FaBrain size={28} />,
+    badge: 'Recommended for growing orgs',
   },
   {
     id: 'tiered',
@@ -27,6 +28,7 @@ const GFGP_OPTIONS = [
     description: 'A dynamic version of GFGP that adapts to the size, complexity, and risk profile of the grantee.',
     color: '#6f42c1',
     icon: <FaLayerGroup size={28} />,
+    badge: 'Most flexible',
   },
 ];
 
@@ -38,7 +40,6 @@ const SelectStructure = () => {
   const handleSelect = async (structureId) => {
     setSelected(structureId);
     setLoading(true);
-
     const storedUser = JSON.parse(localStorage.getItem('user'));
     const userId = storedUser?.id || storedUser?.userId;
 
@@ -46,20 +47,14 @@ const SelectStructure = () => {
       const BASE_URL = import.meta.env.VITE_BASE_URL;
       const res = await fetch(BASE_URL + 'gfgp/structure', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ structure: structureId, userId }),
       });
 
-      if (!res.ok) {
-        throw new Error('Failed to save structure');
-      }
-
+      if (!res.ok) throw new Error('Failed to save structure');
       toast.success(`Structure "${structureId}" selected successfully!`);
       localStorage.setItem('gfgpStructure', structureId);
-        navigate('/grantee/questionnaire');
-
+      navigate('/grantee/questionnaire');
     } catch (err) {
       toast.error('Something went wrong: ' + err.message, {
         autoClose: 3000,
@@ -71,10 +66,18 @@ const SelectStructure = () => {
 
   return (
     <div className="container mt-4 position-relative">
-      <h2 className="text-center mb-4">Select GFGP Structure</h2>
-      <p className="text-center text-muted mb-5">
-        Please choose the structure that best describes your organization.
+      <h2 className="text-center mb-3">Select Your GFGP Structure</h2>
+      <p className="text-center text-muted">
+        Not sure what to pick? Read each option’s description carefully to guide your choice.
       </p>
+
+      {/* GFGP Overview Card */}
+      <Alert variant="light" className="shadow-sm text-center mb-5">
+        <strong>What is GFGP?</strong> <br />
+        The Good Financial Grant Practice (GFGP) is a global standard for financial governance.
+        Selecting the right structure ensures that your organization is assessed fairly based on size,
+        complexity, and risk exposure.
+      </Alert>
 
       <div className="row">
         {GFGP_OPTIONS.map((option) => {
@@ -83,47 +86,36 @@ const SelectStructure = () => {
           return (
             <div className="col-md-4 mb-4" key={option.id}>
               <div
-                className={`card h-100 shadow-lg border-3`}
+                className={`card h-100 shadow border-2`}
                 style={{
                   borderColor: isSelected ? option.color : 'transparent',
-                  transform: isSelected ? 'scale(1.02)' : 'scale(1)',
-                  transition: 'transform 0.2s ease, border-color 0.3s ease',
+                  transform: isSelected ? 'scale(1.03)' : 'scale(1)',
+                  transition: 'all 0.2s ease-in-out',
+                  cursor: loading ? 'not-allowed' : 'pointer',
                 }}
               >
                 <div className="card-body d-flex flex-column">
-                  <div
-                    className="mb-3 d-flex align-items-center justify-content-between"
-                    style={{ color: option.color }}
-                  >
-                    <h5 className="card-title mb-0">{option.title}</h5>
+                  <div className="mb-2 d-flex justify-content-between align-items-center">
+                    <h5 className="mb-0">{option.title}</h5>
                     {option.icon}
                   </div>
 
-                  <div
-                    className="card-text mb-4 text-muted"
-                    style={{
-                      fontSize: '0.95rem',
-                      maxHeight: '200px',
-                      overflowY: 'auto',
-                    }}
-                  >
-                    {option.description}
-                  </div>
+                  <Badge bg="info" className="mb-3 text-light">{option.badge}</Badge>
+
+                  <p className="text-muted" style={{ flexGrow: 1 }}>{option.description}</p>
 
                   <button
-                    onClick={() => handleSelect(option.id)}
-                    className="btn btn-outline-primary mt-auto"
+                    className={`btn ${isSelected ? 'btn-primary' : 'btn-outline-primary'} mt-auto`}
                     style={{
                       backgroundColor: isSelected ? option.color : '',
-                      color: isSelected ? 'white' : option.color,
                       borderColor: option.color,
                     }}
+                    onClick={() => handleSelect(option.id)}
                     disabled={loading}
                   >
                     {loading && isSelected ? (
                       <>
-                        <Spinner animation="border" size="sm" className="me-2" />
-                        Saving...
+                        <Spinner size="sm" className="me-2" /> Saving...
                       </>
                     ) : (
                       `Select ${option.title}`
@@ -136,15 +128,15 @@ const SelectStructure = () => {
         })}
       </div>
 
-      {/* Full-page overlay loader */}
+      {/* Optional loading screen */}
       {loading && (
         <div
           className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
-          style={{ background: 'rgba(255,255,255,0.8)', zIndex: 9999 }}
+          style={{ background: 'rgba(255,255,255,0.8)', zIndex: 1050 }}
         >
           <div className="text-center">
-            <Spinner animation="border" variant="primary" />
-            <div className="mt-2 fw-bold">Submitting your choice...</div>
+            <Spinner animation="border" />
+            <div className="mt-2 fw-bold">Saving your choice...</div>
           </div>
         </div>
       )}
