@@ -4,11 +4,7 @@ import AssessmentInvitations from '@components/AssessmentInvitations';
 import { Routes, Route, Link } from 'react-router-dom';
 import GrantorOverview from '@components/GrantorOverview';
 import GranteeComparison from '../../components/GranteeComparison';
-// import GranteeList from '@/pages/funder/GranteeList';
-// import AssessmentView from '@/pages/funder/AssessmentView';
-// import CompareAssessments from '@/pages/funder/CompareAssessments';
-
-
+import AuditLogs from '../../components/AuditLogs';
 
 const GrantorDashboard = () => {
   return (
@@ -18,10 +14,7 @@ const GrantorDashboard = () => {
           <Route path="grantor-overview" element={<GrantorOverview />} />
           <Route path="invites" element={<AssessmentInvitations />} />
           <Route path="view-assessments" element={<GranteeComparison/>} />
-
-          {/* <Route path="/grantor/grantee-list" element={<GranteeList />} />
-          <Route path="/grantor/grantee/:id/view" element={<AssessmentView />} />
-          <Route path="/grantor/compare" element={<CompareAssessments />} /> */}
+          <Route path="audit-logs" element={<AuditLogs/>} />
         </Routes>
     </DashboardLayout>
   );
