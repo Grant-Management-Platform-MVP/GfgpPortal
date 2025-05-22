@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button, Table, Form, Row, Col, Container } from 'react-bootstrap';
-import { BarChart2, Users, AlertTriangle, TrendingUp } from 'react-feather'; // Feather icons for a modern vibe
-
+import { BarChart2, Users, AlertTriangle, TrendingUp } from 'react-feather';
 const GrantorOverview = () => {
   const [metrics, setMetrics] = useState({});
   const [grantees, setGrantees] = useState([]);
@@ -67,7 +66,7 @@ const GrantorOverview = () => {
 
   return (
     <Container>
-      <h4 className="mb-4">Metr Overview</h4>
+      <h4 className="mb-4">Metrics Overview</h4>
 
       <Row>
         <MetricCard title="Total Assessments" value={metrics.totalAssessments} icon={BarChart2} color="primary" />
