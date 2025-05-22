@@ -18,6 +18,7 @@ const DEFAULT_FORM = {
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const RegisterForm = ({ onRegistrationSuccess }) => {
+  const [formValidated, setFormValidated] = useState(false);
   const [formData, setFormData] = useState(DEFAULT_FORM);
   const [submitting, setSubmitting] = useState(false);
 
@@ -66,6 +67,8 @@ const RegisterForm = ({ onRegistrationSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    setFormValidated(true);
+
     if (!validateForm()) return;
 
     setSubmitting(true);
@@ -106,7 +109,7 @@ const RegisterForm = ({ onRegistrationSuccess }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-3" autoComplete='off'>
+    <form onSubmit={handleSubmit} className={`p-3 needs-validation ${formValidated ? 'was-validated' : ''}`} noValidate autoComplete='off'>
       <div className="row">
         <div className="col-md-6">
           {/* Full Name */}
@@ -254,6 +257,7 @@ const RegisterForm = ({ onRegistrationSuccess }) => {
       <button
         type="submit"
         className="btn btn-success btn-lg w-100"
+        style={{ backgroundColor: '#04ca75', border: 'none', borderRadius: '30px' }}
         disabled={submitting}
       >
         {submitting ? (
