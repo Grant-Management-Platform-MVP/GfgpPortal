@@ -8,7 +8,7 @@ const DEFAULT_FORM = {
   password: "",
   confirmPassword: "",
   orgName: "",
-  orgType: [],
+  orgTypes: "",
   registrationNumbers: [""],
   requestedRole: "",
 };
@@ -47,9 +47,10 @@ const RegisterForm = ({ onRegistrationSuccess }) => {
   const handleChange = ({ target: { name, value } }) =>
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-  const handleMultiSelectChange = (e) => {
-    const options = [...e.target.selectedOptions].map((opt) => opt.value);
-    setFormData((prev) => ({ ...prev, orgType: options }));
+
+  const handleSelectChange = (e) => {
+    const value = e.target.value;
+    setFormData((prev) => ({ ...prev, orgTypes: value }));
   };
 
   const handleRegNumberChange = (index, value) => {
@@ -89,8 +90,8 @@ const RegisterForm = ({ onRegistrationSuccess }) => {
     e.preventDefault();
     if (!validateStep()) return;
 
-    const { orgName, orgType, requestedRole, registrationNumbers } = formData;
-    if (!orgName || !orgType.length || !requestedRole) {
+    const { orgName, orgTypes, requestedRole, registrationNumbers } = formData;
+    if (!orgName || !orgTypes.length || !requestedRole) {
       toast.error("Please fill all required fields in Step 2.");
       return;
     }
@@ -112,7 +113,7 @@ const RegisterForm = ({ onRegistrationSuccess }) => {
           },
           organization: {
             name: formData.orgName,
-            orgTypes: formData.orgType,
+            orgTypes: formData.orgTypes,
             registrationNumbers: formData.registrationNumbers,
             role: formData.requestedRole,
           },
@@ -207,12 +208,12 @@ const RegisterForm = ({ onRegistrationSuccess }) => {
             <Form.Group className="mb-3">
               <Form.Label>Organization Type</Form.Label>
               <Form.Select
-                name="orgType"
-                value={formData.orgType}
-                onChange={handleMultiSelectChange}
-                multiple
+                name="orgTypes"
+                value={formData.orgTypes}
+                onChange={handleSelectChange}
                 required
               >
+                <option value="">-- Select Organization Type --</option>
                 {ORG_TYPES.map((type) => (
                   <option key={type} value={type}>{type}</option>
                 ))}
