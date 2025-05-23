@@ -52,7 +52,7 @@ const AuditLogs = () => {
             <tr key={log.id || index}>
               <td>{index + 1}</td>
               <td>{log.userId}</td>
-              <td>{log.orgName}</td>
+              <td>{log.fullName}</td>
               <td>{log.action}</td>
               <td>{log.details}</td>
               <td>{log.structure || '—'}</td>
