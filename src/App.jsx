@@ -13,6 +13,7 @@ import SessionTimeoutWarning from './SessionTimeoutWarning';
 function App() {
   const handleLogout = () => {
     localStorage.removeItem('user');
+    localStorage.removeItem('gfgpStructure');
     window.location.href = '/';
   };
 
@@ -47,7 +48,7 @@ function App() {
         } />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
-      {/* Session timeout warning */}
+
       {isLoggedIn && <SessionTimeoutWarning onLogout={handleLogout} />}
     </Router>
   );

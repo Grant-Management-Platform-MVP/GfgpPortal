@@ -33,6 +33,14 @@ const DashboardLayout = ({ title, children, userRole }) => {
 
   const sidebarLinks = getSidebarLinks(userRole, hasSelectedStructure);
 
+  const handleLogout = () => {
+    if (window.confirm('Are you sure you want to log out?')) {
+      localStorage.removeItem('user');
+      localStorage.removeItem('gfgpStructure');
+      window.location.href = '/';
+    }
+  };
+
   return (
     <div className={`d-flex ${darkMode ? 'bg-dark text-white' : 'bg-white text-dark'}`} style={{ minHeight: '100vh' }}>
       {/* Sidebar */}
@@ -78,7 +86,9 @@ const DashboardLayout = ({ title, children, userRole }) => {
         <header className={`navbar navbar-expand-lg ${darkMode ? 'bg-dark text-white' : 'bg-primary text-white'} px-4`} style={{ height: '60px' }}>
           <div className="ms-auto d-flex align-items-center">
             <Link to={`/${userRole}/profile`} className="text-white me-3"><i className="bi bi-person-circle me-1"></i> Profile</Link>
-            <Link to="/logout" className="text-white"><i className="bi bi-box-arrow-right me-1"></i> Logout</Link>
+            <button onClick={handleLogout} className="btn btn-link text-white text-decoration-none">
+              <i className="bi bi-box-arrow-right me-1"></i> Logout
+            </button>
           </div>
         </header>
 
