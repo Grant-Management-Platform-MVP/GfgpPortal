@@ -17,7 +17,6 @@ const StartQuestionnaire = () => {
 
   return (
     <div className="container mt-4">
-      <h2>Start Questionnaire</h2>
       <DynamicQuestionnaireForm selectedStructure={structure} />
     </div>
   );
