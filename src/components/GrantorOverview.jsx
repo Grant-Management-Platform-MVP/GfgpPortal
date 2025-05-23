@@ -1,11 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button, Table, Form, Row, Col, Container } from 'react-bootstrap';
 import { BarChart2, Users, AlertTriangle, TrendingUp } from 'react-feather';
+
+const predefinedOrgTypes = [
+  "Charitable/Foundation",
+  "Charitable/other",
+  "Community Based",
+  "Community Societal",
+  "Foundation",
+  "Government",
+  "Independent",
+  "International NGO",
+  "National NGO",
+  "Non Government",
+  "Not for profit",
+  "Other Public Sector",
+  "Parastatal",
+  "Private Sector",
+  "Public Sector",
+  "Private Partnership",
+  "Regional NGO",
+  "State owned enterprises",
+  "Training Trust",
+  "University, Academic and Research",
+  "Other"
+];
+
 const GrantorOverview = () => {
   const [metrics, setMetrics] = useState({});
   const [grantees, setGrantees] = useState([]);
   const [filters, setFilters] = useState({ location: '', sector: '', risk: '' });
-  const [orgTypes, setOrgTypes] = useState([]);
+  // const [orgTypes, setOrgTypes] = useState([]);
   const BASE_URL = import.meta.env.VITE_BASE_URL;
 
   useEffect(() => {
@@ -30,8 +55,8 @@ const GrantorOverview = () => {
       if (!res.ok) throw new Error('Failed to fetch grantees');
       const data = await res.json();
       setGrantees(data);
-      const uniqueOrgTypes = [...new Set(data.map(g => g.orgType))];
-      setOrgTypes(uniqueOrgTypes);
+      // const uniqueOrgTypes = [...new Set(data.map(g => g.orgType))];
+      // setOrgTypes(uniqueOrgTypes);
     } catch (err) {
       console.error('Grantee fetch failed:', err);
     }
@@ -44,8 +69,8 @@ const GrantorOverview = () => {
 
   const filteredGrantees = grantees.filter(g =>
     (!filters.location || g.location === filters.location) &&
-    (!filters.sector || g.sector === filters.sector) &&
-    (!filters.risk || g.risk === filters.risk)
+    (!filters.sector || g.orgType === filters.sector) &&
+    (!filters.risk || g.selectedStructure === filters.risk)
   );
 
   const MetricCard = ({ title, value, icon: Icon, color }) => (
@@ -80,15 +105,15 @@ const GrantorOverview = () => {
         <Form>
           <Row className="g-3">
             <Col md={4}>
-              <Form.Group controlId="filterSector">
-                <Form.Label>Sector</Form.Label>
-                <Form.Select name="sector" value={filters.sector} onChange={handleFilterChange}>
-                  <option value="">All Sectors</option>
-                  {orgTypes.map((type, idx) => (
-                    <option key={idx} value={type}>{type}</option>
-                  ))}
-                </Form.Select>
-              </Form.Group>
+            <Form.Group controlId="filterSector">
+              <Form.Label>Sector</Form.Label>
+              <Form.Select name="sector" value={filters.sector} onChange={handleFilterChange}>
+                <option value="">All Sectors</option>
+                {predefinedOrgTypes.map((type, idx) => (
+                  <option key={idx} value={type}>{type}</option>
+                ))}
+              </Form.Select>
+            </Form.Group>
             </Col>
             <Col md={4}>
               <Form.Group controlId="filterLocation">
@@ -105,9 +130,9 @@ const GrantorOverview = () => {
                 <Form.Label>Risk Level</Form.Label>
                 <Form.Select name="risk" value={filters.risk} onChange={handleFilterChange}>
                   <option value="">All Risk Levels</option>
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
+                  <option value="foundation">foundation</option>
+                  <option value="advanced">advanced</option>
+                  <option value="tiered">tiered</option>
                 </Form.Select>
               </Form.Group>
             </Col>
@@ -123,24 +148,16 @@ const GrantorOverview = () => {
               <tr>
                 <th>Organization</th>
                 <th>Sector</th>
-                <th>Location</th>
-                <th>Risk</th>
-                <th>Assessments</th>
+                <th>GFGP Level</th>
               </tr>
             </thead>
             <tbody>
               {filteredGrantees.length > 0 ? (
                 filteredGrantees.map((g, idx) => (
                   <tr key={idx}>
-                    <td>{g.orgName}</td>
+                    <td>{g.name}</td>
                     <td>{g.orgType}</td>
-                    <td>{g.location}</td>
-                    <td>
-                      <span className={`badge bg-${g.risk === 'High' ? 'danger' : g.risk === 'Medium' ? 'warning text-dark' : 'success'}`}>
-                        {g.risk}
-                      </span>
-                    </td>
-                    <td>{g.assessments}</td>
+                    <td>{g.selectedStructure}</td>
                   </tr>
                 ))
               ) : (
