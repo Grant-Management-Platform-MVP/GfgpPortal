@@ -52,9 +52,9 @@ const AssessmentInvitations = () => {
               {grantees.map((grantee, index) => (
                 <tr key={grantee.id}>
                   <td>{index + 1}</td>
-                  <td>{grantee.fullName}</td>
+                  <td>{grantee.name}</td>
                   <td>{grantee.email}</td>
-                  <td>{grantee.orgName}</td>
+                  <td>{grantee.name}</td>
                   <td>
                     <button
                       className="btn btn-primary btn-sm"
