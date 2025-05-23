@@ -16,8 +16,6 @@ import ComparisonLineChart from '@components/ComparisonLineChart';
 const GranteeComparison = () => {
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const [grantees, setGrantees] = useState([]);
-  const [granteeA, setGranteeA] = useState(null);
-  const [granteeB, setGranteeB] = useState(null);
   const [template, setTemplate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedGrantees, setSelectedGrantees] = useState([]);
@@ -48,12 +46,16 @@ const exportToCSV = () => {
 
   template.sections.forEach((section) => {
     csvRows.push([`Section: ${section.title}`]);
-    csvRows.push(['Question', 'Grantee A', 'Grantee B']);
+    csvRows.push(['Question', ...selectedGrantees.map(g => g.granteeName || `Grantee #${g.userId}`)]);
     section.questions.forEach((q) => {
-      const a = answersA[q.id]?.answer || '—';
-      const b = answersB[q.id]?.answer || '—';
-      csvRows.push([q.questionText, a, b]);
-    });
+      const row = [q.questionText];
+      selectedGrantees.forEach(grantee => {
+        const ans = granteeAnswers[grantee.id]?.[q.id]?.answer || '—';
+        row.push(ans);
+      });
+    csvRows.push(row);
+});
+
     csvRows.push([]);
   });
 
@@ -70,12 +72,12 @@ const exportToCSV = () => {
     const fetchData = async () => {
       try {
         const res = await axios.get(`${BASE_URL}gfgp/grantor/grantee-assessments`);
-        setGrantees(res.data);
+        const granteeList = res.data;
+        setGrantees(granteeList);
 
-        if (res.data.length >= 2) {
-          setGranteeA(res.data[0]);
-          setGranteeB(res.data[1]);
-          const tmpl = await fetchTemplate(res.data[0].structure);
+        if (granteeList.length > 0) {
+          setSelectedGrantees(granteeList.slice(0, 2));
+          const tmpl = await fetchTemplate(granteeList[0].structure);
           setTemplate(tmpl);
         }
       } catch (err) {
@@ -104,10 +106,7 @@ const exportToCSV = () => {
 
   if (loading) return <p className="text-center mt-5">Loading comparison...</p>;
 
-  if (!granteeA || !granteeB || !template) return <p>No data to compare.</p>;
-
-  const answersA = parseAnswers(granteeA.answers);
-  const answersB = parseAnswers(granteeB.answers);
+  if (!template || selectedGrantees.length === 0) return <p>No data to compare.</p>;
 
   return (
     <div id="comparisonContent">
