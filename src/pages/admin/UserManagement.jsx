@@ -137,10 +137,7 @@ const UserManagement = () => {
                 <tr>
                   <th>#</th>
                   <th>Full Name</th>
-                  <th>Username</th>
                   <th>Email</th>
-                  <th>Role</th>
-                  <th>Organization</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -157,10 +154,7 @@ const UserManagement = () => {
                     <tr key={user.id}>
                       <td>{(currentPage - 1) * usersPerPage + index + 1}</td>
                       <td>{user.fullName}</td>
-                      <td>{user.username}</td>
                       <td>{user.email}</td>
-                      <td>{user.role || <em className="text-muted">N/A</em>}</td>
-                      <td>{user.orgName || <em className="text-muted">N/A</em>}</td>
                       <td>
                         <span
                           className={`badge bg-${
