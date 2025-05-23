@@ -22,6 +22,8 @@ const SharedReportsList = () => {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const BASE_URL = import.meta.env.VITE_BASE_URL;
+  const user = JSON.parse(localStorage.getItem('user'));
+  const grantorId = user?.userId;
 
   // ⬇ Shared fetcher now reusable in requestConsent
   const fetchAllReports = async () => {
@@ -49,7 +51,9 @@ const SharedReportsList = () => {
     setReports(updatedReports);
 
     try {
-      await axios.post(`${BASE_URL}gfgp/request-consent/${reportId}/${orgId}`);
+      await axios.post(`${BASE_URL}gfgp/request-consent/${reportId}/${orgId}`, {
+        grantorId: grantorId
+      });
       toast.success('Consent request sent!');
       await fetchAllReports(); // 🔁 Refresh full state
     } catch (error) {
