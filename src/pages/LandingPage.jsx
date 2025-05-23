@@ -24,8 +24,8 @@ const LandingPage = () => {
               style={{ maxHeight: '100px' }}
               className="mb-3"
             />
-            <h4 className="fw-bold text-center mb-2">Good Financial Grant Practice</h4>
-            <p className="text-center mb-0">Elevate Your Grant Management.</p>
+            <h4 className="fw-bold text-center mb-2" style={{color: '#043873'}}>Good Financial Grant Practice</h4>
+            <p className="text-center mb-0" style={{color: '#043873'}}>Elevate Your Grant Management.</p>
           </div>
 
           {/* Form Section */}
