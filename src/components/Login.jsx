@@ -4,7 +4,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
 
 function LoginForm() {
-  const [username, setUsername] = useState('');
+  const [email, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -13,8 +13,8 @@ function LoginForm() {
   const handleSubmit = async e => {
     e.preventDefault();
 
-    if (!username.trim() || !password.trim()) {
-      toast.error("Please fill in both username and password.");
+    if (!email.trim() || !password.trim()) {
+      toast.error("Please fill in both email and password.");
       return;
     }
     setLoading(true);
@@ -24,11 +24,11 @@ function LoginForm() {
       const res = await fetch(BASE_URL + 'auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ email, password }),
       });
 
       const contentType = res.headers.get("content-type");
-      let errorMessage = 'Login failed. Wrong username or password.';
+      let errorMessage = 'Login failed. Wrong email or password.';
 
       if (!res.ok) {
         try {
@@ -104,12 +104,12 @@ function LoginForm() {
           type="text"
           className="form-control"
           id="usernameInput"
-          placeholder="Username"
-          value={username}
+          placeholder="Email"
+          value={email}
           onChange={e => setUsername(e.target.value)}
           required
         />
-        <label htmlFor="usernameInput">Username</label>
+        <label htmlFor="usernameInput">Email</label>
       </div>
 
       <div className="form-floating mb-4 position-relative">
