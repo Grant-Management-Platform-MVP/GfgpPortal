@@ -20,37 +20,37 @@ function App() {
   const isLoggedIn = !!localStorage.getItem('user'); // check if user is logged in
 
   return (
-    <Router>
-      <ToastContainer position="top-right" autoClose={5000} />
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
+      <Router>
+        <ToastContainer position="top-right" autoClose={5000} />
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
 
-        {/* role-based routes */}
-        <Route path="/grantee/*" element={
-          <ProtectedRoute allowedRoles={['GRANTEE']}>
-            <GranteeDashboard />
-          </ProtectedRoute>
-        } />
-        <Route path="/grantor/*" element={
-          <ProtectedRoute allowedRoles={['GRANTOR']}>
-            <GrantorDashboard />
-          </ProtectedRoute>
-        } />
-        <Route path="/auditor/*" element={
-          <ProtectedRoute allowedRoles={['AUDITOR']}>
-            <AuditorDashboard />
-          </ProtectedRoute>
-        } />
-        <Route path="/admin/*" element={
-          <ProtectedRoute allowedRoles={['ADMIN']}>
-            <AdminDashboard />
-          </ProtectedRoute>
-        } />
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
+          {/* role-based routes */}
+          <Route path="/grantee/*" element={
+            <ProtectedRoute allowedRoles={['GRANTEE']}>
+              <GranteeDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/grantor/*" element={
+            <ProtectedRoute allowedRoles={['GRANTOR']}>
+              <GrantorDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/auditor/*" element={
+            <ProtectedRoute allowedRoles={['AUDITOR']}>
+              <AuditorDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/*" element={
+            <ProtectedRoute allowedRoles={['ADMIN']}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
 
-      {isLoggedIn && <SessionTimeoutWarning onLogout={handleLogout} />}
-    </Router>
+        {isLoggedIn && <SessionTimeoutWarning onLogout={handleLogout} />}
+      </Router>
   );
 }
 
