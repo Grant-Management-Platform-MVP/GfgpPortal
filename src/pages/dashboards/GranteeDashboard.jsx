@@ -6,6 +6,7 @@ import StartQuestionnaire from '@components/questionnaires/StartQuestionnaire';
 import Profile from '@common/ProfilePage';
 import SelectStructure from '@components/grantee/SelectStructure';
 import ConsentRequestsCard from '@components/ConsentRequestsCard';
+import DocumentRepository from '@components/DocumentRepository';
 
 const GranteeDashboard = () => {
   return (
@@ -18,6 +19,7 @@ const GranteeDashboard = () => {
           <Route path="questionnaire" element={<StartQuestionnaire />} />
           <Route path="compliance-reports" element={<ComplianceReports />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="documents" element={<DocumentRepository/>} />
         </Routes>
       </div>
     </DashboardLayout>

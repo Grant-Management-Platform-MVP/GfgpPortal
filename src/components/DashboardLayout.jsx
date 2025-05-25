@@ -110,7 +110,7 @@ const getSidebarLinks = (role, hasSelectedStructure) => {
         { path: '/grantee/questionnaire', label: 'Start Questionnaire', icon: 'bi-ui-checks', disabled: !hasSelectedStructure },
         { path: '/grantee/compliance-reports', label: 'Compliance Reports', icon: 'bi-bar-chart-line' },
         { path: '/grantee/recommendations', label: 'Recommendations', icon: 'bi-lightbulb' },
-        { path: '/grantee/documents', label: 'Document Uploads', icon: 'bi-folder2-open' },
+        { path: '/grantee/documents', label: 'Document Repository', icon: 'bi-folder2-open' },
       ];
     case 'grantor':
       return [
