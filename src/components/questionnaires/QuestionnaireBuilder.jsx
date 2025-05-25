@@ -69,7 +69,7 @@ const AdminQuestionnaireBuilder = () => {
       options: [...FIXED_OPTIONS],
       guidance: "",
       conditional: null,
-      uploadEvidence: false,
+      uploadEvidence: true,
       userResponse: {
         answer: "",
         justification: "",
