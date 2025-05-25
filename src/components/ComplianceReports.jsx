@@ -209,7 +209,19 @@ const ComplianceReports = ({ userId: propUserId, structure: propStructure }) => 
                             <span className={`badge bg-${status.variant}`}>{status.label}</span>
                           </OverlayTrigger>
                         </td>
-                        <td>{response.evidence || "—"}</td>
+                        <td>
+                          {response.evidence ? (
+                            <a
+                              href={`${BASE_URL.replace(/\/+$/, "")}${response.evidence}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              View Evidence
+                            </a>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
                         <td>{response.justification || "—"}</td>
                       </tr>
                     );
