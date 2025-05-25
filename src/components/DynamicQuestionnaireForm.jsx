@@ -111,12 +111,38 @@ const DynamicQuestionnaireForm = () => {
     return showIf.includes(answers[questionId]);
   };
 
+  const handleFileUpload = async (file, questionId) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("userId", userId);
+    formData.append("questionId", questionId);
+
+    try {
+      const res = await axios.post(`${BASE_URL}gfgp/upload`, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+
+      const { fileUrl } = res.data;
+
+      setAnswers((prev) => ({
+        ...prev,
+        [questionId]: {
+          ...prev[questionId],
+          evidence: fileUrl,
+        },
+      }));
+    } catch (err) {
+      console.error("Upload failed", err);
+      alert("File upload failed. Try again.");
+    }
+  };
+
   const handleSubmit = async e => {
     e?.preventDefault();
     if (!hasInteracted) return;
 
     try {
-      await axios.post(`${BASE_URL}gfgp/assessment-responses/submit`, {
+      await axios.post(`${BASE_URL}gfgp/assessment-responses/submit`, { //full-submission
         userId,
         structure,
         version: template.version,
@@ -190,17 +216,19 @@ const DynamicQuestionnaireForm = () => {
             onChange={(e) => {
               const file = e.target.files[0];
               if (file) {
-                setAnswers((prev) => ({
-                  ...prev,
-                  [question.id]: {
-                    ...prev[question.id],
-                    evidence: file.name, // Simulated for now
-                  },
-                }));
+                handleFileUpload(file, question.id);
+                e.target.value = null;
               }
             }}
             disabled={disabled}
           />
+        )}
+        {response.evidence && (
+          <div className="mt-2">
+            <a href={response.evidence} target="_blank" rel="noreferrer">
+              View uploaded evidence
+            </a>
+          </div>
         )}
       </>
     );
