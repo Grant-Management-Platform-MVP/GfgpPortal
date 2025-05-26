@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { User, FileText, Inbox, Globe, BarChart2 } from 'lucide-react';
 import {
-  LineChart, Line,
+  ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   PieChart, Pie, Cell,
-  Tooltip, ResponsiveContainer,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend
 } from 'recharts';
 
 const AdminHome = () => {
@@ -14,42 +13,56 @@ const AdminHome = () => {
     submissions: 0,
     languages: 0,
   });
-
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const COLORS = ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#6f42c1', '#20c997'];
   const BASE_URL = import.meta.env.VITE_BASE_URL;
 
   useEffect(() => {
-  const fetchStats = async () => {
-    try {
-      const res = await fetch(BASE_URL+'gfgp/admin/dashboard-stats');
-      const data = await res.json();
-      setStats(data);
-    } catch (err) {
-      console.error('Failed to fetch dashboard stats:', err);
-    }
-  };
+    const fetchStats = async () => {
+      try {
+        const res = await fetch(`${BASE_URL}gfgp/admin/dashboard-stats`);
+        if (!res.ok) throw new Error('Failed to load dashboard stats.');
+        const data = await res.json();
+        setStats(data);
+      } catch (err) {
+        console.error('Dashboard fetch error:', err);
+        setError(err.message || 'Unknown error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  fetchStats();
-}, []);
+    fetchStats();
+  }, [BASE_URL]);
 
+  const safeCount = (value) => (typeof value === 'number' ? value : 0);
 
   const widgets = [
-    { title: 'Total Users', count: stats.users, icon: <User size={28} className="text-primary" /> },
-    { title: 'Questionnaires', count: stats.questionnaires, icon: <FileText size={28} className="text-success" /> },
-    { title: 'Assessment Submissions', count: stats.submissions, icon: <Inbox size={28} className="text-warning" /> },
-    { title: 'Languages Supported', count: stats.languages, icon: <Globe size={28} className="text-info" /> },
+    { title: 'Total Users', count: safeCount(stats.users), icon: <User size={28} className="text-primary" /> },
+    { title: 'Questionnaires', count: safeCount(stats.questionnaires), icon: <FileText size={28} className="text-success" /> },
+    { title: 'Assessment Submissions', count: safeCount(stats.submissions), icon: <Inbox size={28} className="text-warning" /> },
+    { title: 'Languages Supported', count: safeCount(stats.languages), icon: <Globe size={28} className="text-info" /> },
   ];
 
   const barData = [
-    { name: 'Users', value: stats.users },
-    { name: 'Questionnaires', value: stats.questionnaires },
-    { name: 'Submissions', value: stats.submissions },
+    { name: 'Users', value: safeCount(stats.users) },
+    { name: 'Questionnaires', value: safeCount(stats.questionnaires) },
+    { name: 'Submissions', value: safeCount(stats.submissions) },
   ];
 
   const pieData = [
-    { name: 'Submitted', value: stats.submissions },
+    { name: 'Submitted', value: safeCount(stats.submissions) },
+    // Future enhancement: add 'Pending', 'In Progress', etc.
   ];
 
-  const pieColors = ['#4e73df', '#1cc88a', '#e74a3b'];
+  if (loading) {
+    return <div className="text-center my-5">Loading dashboard...</div>;
+  }
+
+  if (error) {
+    return <div className="alert alert-danger text-center mt-5">Error: {error}</div>;
+  }
 
   return (
     <div className="container mt-4">
@@ -57,7 +70,7 @@ const AdminHome = () => {
       <div className="row">
         {widgets.map((widget, index) => (
           <div className="col-sm-6 col-lg-3 mb-4" key={index}>
-            <div className="card shadow-sm border-0 h-100">
+            <div className="card shadow-sm border-0 h-100" style={{ minHeight: '120px' }}>
               <div className="card-body d-flex align-items-center gap-3">
                 <div>{widget.icon}</div>
                 <div>
@@ -72,6 +85,7 @@ const AdminHome = () => {
 
       {/* Charts */}
       <div className="row">
+        {/* Bar Chart */}
         <div className="col-md-6 mb-4">
           <div className="card h-100 shadow-sm">
             <div className="card-header fw-semibold d-flex align-items-center gap-2">
@@ -81,27 +95,38 @@ const AdminHome = () => {
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={barData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
+                  <XAxis dataKey="name" label={{ value: 'Metric', position: 'insideBottom', offset: -5 }} />
+                  <YAxis label={{ value: 'Count', angle: -90, position: 'insideLeft' }} />
                   <Tooltip />
-                  <Bar dataKey="value" fill="#0d6efd" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="value">
+                    {barData.map((entry, index) => (
+                      <Cell key={`bar-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
         </div>
 
+        {/* Pie Chart */}
         <div className="col-md-6 mb-4">
           <div className="card h-100 shadow-sm">
             <div className="card-header fw-semibold d-flex align-items-center gap-2">
-              <BarChart2 /> Submission Status
+              <BarChart2 /> Total Submissions Overview
             </div>
             <div className="card-body">
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
-                  <Pie data={pieData} dataKey="value" nameKey="name" outerRadius={80}>
+                  <Pie
+                    data={pieData}
+                    dataKey="value"
+                    nameKey="name"
+                    outerRadius={80}
+                    label
+                  >
                     {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip />
@@ -136,7 +161,10 @@ const AdminHome = () => {
           >
             <div className="accordion-body">
               <ul className="list-group">
-                <li className="list-group-item">New Signups This Month: <strong>{stats.submissions}</strong></li>
+                <li className="list-group-item">
+                  New Signups This Month: <strong>{safeCount(stats.submissions)}</strong>
+                </li>
+                {/* Future: Add more breakdowns like active users, feedback, failed submissions, etc. */}
               </ul>
             </div>
           </div>
