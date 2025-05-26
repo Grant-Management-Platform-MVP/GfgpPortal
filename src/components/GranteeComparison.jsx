@@ -1,4 +1,3 @@
-// File: GranteeComparison.jsx
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import GranteeSelect from '@components/GranteeSelect';
@@ -11,7 +10,8 @@ import Papa from 'papaparse';
 import Select from 'react-select';
 import ComparisonPieChart from '@components/ComparisonPieChart';
 import ComparisonLineChart from '@components/ComparisonLineChart';
-
+import HighRiskSummary from '@components/HighRiskSummary';
+import { isHighRisk } from '@utils/riskUtils';
 
 const GranteeComparison = () => {
   const BASE_URL = import.meta.env.VITE_BASE_URL;
@@ -41,32 +41,31 @@ const GranteeComparison = () => {
     });
   };
 
-const exportToCSV = () => {
-  const csvRows = [];
+  const exportToCSV = () => {
+    const csvRows = [];
 
-  template.sections.forEach((section) => {
-    csvRows.push([`Section: ${section.title}`]);
-    csvRows.push(['Question', ...selectedGrantees.map(g => g.granteeName || `Grantee #${g.userId}`)]);
-    section.questions.forEach((q) => {
-      const row = [q.questionText];
-      selectedGrantees.forEach(grantee => {
-        const ans = granteeAnswers[grantee.id]?.[q.id]?.answer || '—';
-        row.push(ans);
+    template.sections.forEach((section) => {
+      csvRows.push([`Section: ${section.title}`]);
+      csvRows.push(['Question', ...selectedGrantees.map(g => g.granteeName || `Grantee #${g.userId}`)]);
+      section.questions.forEach((q) => {
+        const row = [q.questionText];
+        selectedGrantees.forEach(grantee => {
+          const ans = granteeAnswers[grantee.id]?.[q.id]?.answer || '—';
+          row.push(ans);
+        });
+        csvRows.push(row);
       });
-    csvRows.push(row);
-});
 
-    csvRows.push([]);
-  });
+      csvRows.push([]);
+    });
 
-  const csv = Papa.unparse(csvRows);
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = 'grantee_comparison.csv';
-  link.click();
-};
-
+    const csv = Papa.unparse(csvRows);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'grantee_comparison.csv';
+    link.click();
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -103,57 +102,49 @@ const exportToCSV = () => {
     return acc;
   }, {});
 
-
   if (loading) return <p className="text-center mt-5">Loading comparison...</p>;
-
   if (!template || selectedGrantees.length === 0) return <p>No data to compare.</p>;
 
   return (
     <div id="comparisonContent">
       <div className="container d-flex justify-content-end gap-2 mb-3">
-        <button className="btn btn-outline-primary btn-sm" onClick={exportToPDF}>
-          Export to PDF
-        </button>
-        <button className="btn btn-outline-secondary btn-sm" onClick={exportToCSV}>
-          Export to CSV
-        </button>
+        <button className="btn btn-outline-primary btn-sm" onClick={exportToPDF}>Export to PDF</button>
+        <button className="btn btn-outline-secondary btn-sm" onClick={exportToCSV}>Export to CSV</button>
       </div>
       <div className="container py-4">
         <div className="row mb-4">
           <div className="col-md-6">
             <Select
-              options={grantees.map(g => ({
-                value: g,
-                label: g.granteeName || `Grantee #${g.userId}`
-              }))}
+              options={grantees.map(g => ({ value: g, label: g.granteeName || `Grantee #${g.userId}` }))}
               isMulti
               value={selectedGrantees.map(g => ({ value: g, label: g.granteeName || `Grantee #${g.userId}` }))}
               onChange={(selected) => setSelectedGrantees(selected.map(s => s.value))}
               className="mb-3"
             />
           </div>
-          <div className="col-md-6">
-            {/* <GranteeSelect label="Grantee B" grantees={grantees} onChange={setGranteeB} selected={granteeB} /> */}
-          </div>
         </div>
 
         <div className="row mb-4">
           <GranteeSummaryCard grantees={selectedGrantees} />
         </div>
-          <SectionComparisonTable
-            template={template}
-            grantees={selectedGrantees}
-            granteeAnswers={granteeAnswers}
-          />
+
+        <SectionComparisonTable
+          template={template}
+          grantees={selectedGrantees}
+          granteeAnswers={granteeAnswers}
+          isHighRisk={isHighRisk}
+        />
+
+        <HighRiskSummary
+          template={template}
+          grantees={selectedGrantees}
+          granteeAnswers={granteeAnswers}
+          isHighRisk={isHighRisk}
+        />
+
         <div className="card mt-5">
           <div className="card-body">
             <h5 className="card-title">Visual Breakdown</h5>
-            {/* <ComparisonBarChart
-              grantees={selectedGrantees}
-              granteeAnswers={granteeAnswers}
-              template={template}
-            /> */}
-
             <div className="d-flex gap-2 mb-3">
               <button className={`btn btn-sm ${chartType === 'bar' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setChartType('bar')}>Bar</button>
               <button className={`btn btn-sm ${chartType === 'pie' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setChartType('pie')}>Pie</button>
