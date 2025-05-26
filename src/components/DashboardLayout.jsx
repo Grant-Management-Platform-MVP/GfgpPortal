@@ -118,8 +118,6 @@ const getSidebarLinks = (role, hasSelectedStructure) => {
         { path: '/grantor/view-assessments', label: 'Grantee Assessments', icon: 'bi-people' },
         { path: '/grantor/shared-reports', label: 'Grantee Reports', icon: 'bi-file-earmark-bar-graph' },
         { path: '/grantor/audit-logs', label: 'Audit Logs', icon: 'bi-journal-text' },
-        { path: '/grantor/risk-analysis', label: 'Risk Analysis', icon: 'bi-shield-exclamation' },
-        { path: '/grantor/high-risk', label: 'High-Risk Areas', icon: 'bi-exclamation-diamond' },
       ];
     case 'auditor':
       return [
