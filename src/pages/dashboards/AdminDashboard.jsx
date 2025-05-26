@@ -7,6 +7,7 @@ import AdminQuestionnaireBuilder from '@components/questionnaires/QuestionnaireB
 import TemplateList from '@components/questionnaires/TemplateList';
 import QuestionnaireEditor from '@components/questionnaires/QuestionnaireEditor';
 import AdminHome from '@pages/admin/AdminHome';
+import RecommendationForm from '../admin/RecommendationForm';
 
 const AdminDashboard = () => {
   return (
@@ -18,7 +19,7 @@ const AdminDashboard = () => {
         <Route path="questionnaire-creation" element={<AdminQuestionnaireBuilder/>} />
         <Route path="questionnaire-management" element={<TemplateList />} />
         <Route path="questionnaire-editor/:id" element={<QuestionnaireEditor />} />
-
+        <Route path="recommendations" element={<RecommendationForm/>} />
       </Routes>
     </DashboardLayout>
   );

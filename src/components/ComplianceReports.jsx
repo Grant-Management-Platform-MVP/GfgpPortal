@@ -32,6 +32,7 @@ const ComplianceReports = ({ userId: propUserId, structure: propStructure }) => 
   const [error, setError] = useState("");
   const [completeness, setCompleteness] = useState(null);
   const [compliance, setCompliance] = useState(null);
+  const [recommendations, setRecommendations] = useState({});
 
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const user = JSON.parse(localStorage.getItem("user"));
@@ -66,6 +67,22 @@ const ComplianceReports = ({ userId: propUserId, structure: propStructure }) => 
 
         setTemplate(parsedTemplate);
         setResponses(parsedAnswers);
+        const recMap = {};
+
+        await Promise.all(
+          parsedTemplate.sections.map(async (section) => {
+            try {
+              const recRes = await axios.get(`${BASE_URL}gfgp/recommendations/fetch?sectionTitle=${encodeURIComponent(section.title)}`);
+              recMap[section.title] = recRes.data || [];
+            } catch (err) {
+              console.warn(`No recommendations found for ${section.sectionTitle}`, err);
+              recMap[section.sectionTitle] = [];
+            }
+          })
+        );
+
+        setRecommendations(recMap);
+
         setCompleteness(responseRes.data.completeness || null);
         setCompliance(responseRes.data.compliance || null);
       } catch (err) {
@@ -228,6 +245,26 @@ const ComplianceReports = ({ userId: propUserId, structure: propStructure }) => 
                   })}
                 </tbody>
               </Table>
+                {recommendations[section.title]?.length > 0 && (
+                  <div className="mt-4">
+                    <h6 className="text-primary d-flex align-items-center mb-3">
+                      <i className="bi bi-lightbulb me-2"></i> {/* Bootstrap icon */}
+                      Improvement Recommendations
+                    </h6>
+                    <div className="list-group">
+                      {recommendations[section.title].map((rec, i) => (
+                        <div key={i} className="list-group-item">
+                          {rec.issueSummary && (
+                            <div className="fw-bold text-muted small mb-1">
+                              Issue: {rec.issueSummary}
+                            </div>
+                          )}
+                          <div>{rec.recommendationText || <em>No recommendation provided.</em>}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
             </Card.Body>
           </Card>
         );

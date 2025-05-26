@@ -109,14 +109,13 @@ const getSidebarLinks = (role, hasSelectedStructure) => {
         { path: '/grantee/select-structure', label: 'Select GFGP Structure', icon: 'bi-diagram-3' },
         { path: '/grantee/questionnaire', label: 'Start Questionnaire', icon: 'bi-ui-checks', disabled: !hasSelectedStructure },
         { path: '/grantee/compliance-reports', label: 'Compliance Reports', icon: 'bi-bar-chart-line' },
-        { path: '/grantee/recommendations', label: 'Recommendations', icon: 'bi-lightbulb' },
         { path: '/grantee/documents', label: 'Document Repository', icon: 'bi-folder2-open' },
       ];
     case 'grantor':
       return [
         { path: '/grantor/grantor-overview', label: 'Metrics Overview', icon: 'bi-speedometer2' },
         { path: '/grantor/invites', label: 'Assessment Invitations', icon: 'bi-envelope-paper' },
-          { path: '/grantor/view-assessments', label: 'Grantee Assessments', icon: 'bi-people' },
+        { path: '/grantor/view-assessments', label: 'Grantee Assessments', icon: 'bi-people' },
         { path: '/grantor/shared-reports', label: 'Grantee Reports', icon: 'bi-file-earmark-bar-graph' },
         { path: '/grantor/audit-logs', label: 'Audit Logs', icon: 'bi-journal-text' },
         { path: '/grantor/risk-analysis', label: 'Risk Analysis', icon: 'bi-shield-exclamation' },
@@ -135,6 +134,7 @@ const getSidebarLinks = (role, hasSelectedStructure) => {
         { path: '/admin/questionnaire-creation', label: 'Create Questionnaire', icon: 'bi-plus-square' },
         { path: '/admin/questionnaire-management', label: 'Manage Questionnaires', icon: 'bi-layout-text-window' },
         { path: '/admin/reports', label: 'Reports & Exports', icon: 'bi-bar-chart' },
+         { path: '/admin/recommendations', label: 'Recommendations Management', icon: 'bi-book' },
         { path: '/admin/translations', label: 'Translations', icon: 'bi-translate' },
       ];
     default:
