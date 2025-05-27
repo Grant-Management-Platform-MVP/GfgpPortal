@@ -7,6 +7,9 @@ const AssessmentInvitations = () => {
   const [loading, setLoading] = useState(true);
   const [sendingTo, setSendingTo] = useState(null);
   const BASE_URL = import.meta.env.VITE_BASE_URL;
+  const user = JSON.parse(localStorage.getItem("user"));
+  const userId = user?.userId;
+  const structure= "foundation"; // Assuming structure is fixed for this component
 
   useEffect(() => {
     axios.get(BASE_URL + 'gfgp/grantees')
@@ -18,7 +21,7 @@ const AssessmentInvitations = () => {
   const sendInvitation = async (email) => {
     setSendingTo(email);
     try {
-      await axios.post(BASE_URL + 'gfgp/grantees/invite', { email });
+      await axios.post(`${BASE_URL}gfgp/grantees/${userId}/structure/${structure}/invite`, { email });
       toast.success(`Invitation sent to ${email}`);
     } catch (error) {
       console.error('Error sending invitation', error);
