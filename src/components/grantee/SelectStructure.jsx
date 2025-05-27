@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Spinner, Alert, Badge } from 'react-bootstrap';
+import { Spinner, Alert, Badge, Button } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import { FaCubes, FaBrain, FaLayerGroup } from 'react-icons/fa';
 import 'react-toastify/dist/ReactToastify.css';
@@ -36,10 +36,14 @@ const SelectStructure = () => {
   const navigate = useNavigate();
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const handleSelect = async (structureId) => {
+    if (loading) return;
+
     setSelected(structureId);
     setLoading(true);
+
     const storedUser = JSON.parse(localStorage.getItem('user'));
     const userId = storedUser?.id || storedUser?.userId;
 
@@ -52,17 +56,22 @@ const SelectStructure = () => {
       });
 
       if (!res.ok) throw new Error('Failed to save structure');
+
       toast.success(`Structure "${structureId}" selected successfully!`);
       localStorage.setItem('gfgpStructure', structureId);
-      navigate('/grantee/questionnaire');
+
+      setSaved(true);
     } catch (err) {
       toast.error('Something went wrong: ' + err.message, {
         autoClose: 3000,
         position: 'top-center',
       });
+    } finally {
       setLoading(false);
     }
   };
+
+  const handleProceed = () => navigate('/grantee/questionnaire');
 
   return (
     <div className="container mt-4 position-relative">
@@ -71,7 +80,6 @@ const SelectStructure = () => {
         Not sure what to pick? Read each option’s description carefully to guide your choice.
       </p>
 
-      {/* GFGP Overview Card */}
       <Alert variant="light" className="shadow-sm text-center mb-5">
         <strong>What is GFGP?</strong> <br />
         The Good Financial Grant Practice (GFGP) is a global standard for financial governance.
@@ -127,6 +135,23 @@ const SelectStructure = () => {
           );
         })}
       </div>
+
+      {/* After Save Confirmation */}
+      {saved && !loading && (
+        <div className="text-center mt-4">
+          <Alert variant="success" className="d-inline-block">
+            ✅ Structure saved successfully!
+          </Alert>
+          <div className="mt-3 d-flex justify-content-center gap-3">
+            <Button variant="success btn-lg btn-block" onClick={handleProceed}>
+              Start Assessment
+            </Button>
+            <Button variant="warning btn-lg btn-block" onClick={() => navigate('/grantee/dashboard')}>
+              Maybe Later
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Optional loading screen */}
       {loading && (
