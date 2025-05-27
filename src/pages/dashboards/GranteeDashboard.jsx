@@ -7,6 +7,7 @@ import Profile from '@common/ProfilePage';
 import SelectStructure from '@components/grantee/SelectStructure';
 import ConsentRequestsCard from '@components/ConsentRequestsCard';
 import DocumentRepository from '@components/DocumentRepository';
+// import ResumeAssessmentPage from '@components/ResumeAssessmentPage';
 
 const GranteeDashboard = () => {
   return (
@@ -20,6 +21,7 @@ const GranteeDashboard = () => {
           <Route path="compliance-reports" element={<ComplianceReports />} />
           <Route path="profile" element={<Profile />} />
           <Route path="documents" element={<DocumentRepository/>} />
+          {/* <Route path="/resume-assessment/:assessmentId" element={<ResumeAssessmentPage />} /> */}
         </Routes>
       </div>
     </DashboardLayout>

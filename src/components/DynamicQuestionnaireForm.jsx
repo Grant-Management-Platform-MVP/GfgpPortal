@@ -11,6 +11,8 @@ const DynamicQuestionnaireForm = () => {
   const [submitted, setSubmitted] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
+
 
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const user = JSON.parse(localStorage.getItem("user"));
@@ -23,6 +25,15 @@ const DynamicQuestionnaireForm = () => {
 
     if (!userId || !structure) return;
 
+    const normalizeAnswers = (draftAnswers) => {
+      const normalized = {};
+      for (const [qid, value] of Object.entries(draftAnswers)) {
+        normalized[qid] =
+          typeof value === "object" ? value : { answer: value };
+      }
+      return normalized;
+    };
+
     const fetchTemplateAndDraft = async () => {
       try {
         setLoading(true);
@@ -30,6 +41,7 @@ const DynamicQuestionnaireForm = () => {
         const [templateObj] = res.data;
 
         if (!templateObj || !templateObj.content) throw new Error("Template content missing.");
+
         const parsedContent = typeof templateObj.content === "string"
           ? JSON.parse(templateObj.content)
           : templateObj.content;
@@ -42,11 +54,40 @@ const DynamicQuestionnaireForm = () => {
           });
         }
 
+        // let isSubmitted = false;
+
+        // 🔒 First check if form is submitted
+        try {
+          const submissionStatusRes = await axios.get(`${BASE_URL}gfgp/assessment-submissions/${userId}/${structure}`);
+          const status = submissionStatusRes.data?.status?.toUpperCase();
+          if (status === "SUBMITTED") {
+            // isSubmitted = true;
+            if (isMounted) setIsLocked(true);
+
+            const submittedAnswers = submissionStatusRes.data.answers;
+            const parsedSubmitted = typeof submittedAnswers === "string"
+              ? JSON.parse(submittedAnswers)
+              : submittedAnswers;
+
+            if (isMounted) {
+              setAnswers(normalizeAnswers(parsedSubmitted));
+            }
+
+            return; // ✅ Don't load draft if it's already submitted
+          }
+        } catch (submissionErr) {
+          console.warn("No submission status found — may be unsubmitted.", submissionErr);
+        }
+
+        // 📝 Only fetch draft if not submitted
         try {
           const draftRes = await axios.get(`${BASE_URL}gfgp/assessment-responses/${userId}/${structure}`);
           if (isMounted) {
             if (draftRes.data) {
-              setAnswers(draftRes.data.answers || {});
+              console.log("Draft response found:", draftRes.data);
+              const rawAnswers = draftRes.data.answers || {};
+              const parsedAnswers = typeof rawAnswers === "string" ? JSON.parse(rawAnswers) : rawAnswers;
+              setAnswers(normalizeAnswers(parsedAnswers));
             } else {
               console.warn("Draft response is null — starting fresh.");
               setAnswers({});
@@ -55,15 +96,6 @@ const DynamicQuestionnaireForm = () => {
         } catch (draftErr) {
           console.warn("No draft found — starting fresh.", draftErr);
           if (isMounted) setAnswers({});
-        }
-        // >> Check if already submitted
-        try {
-          const submissionStatusRes = await axios.get(`${BASE_URL}gfgp/assessment-submissions/${userId}/${structure}`);
-          if (submissionStatusRes.data?.status?.toUpperCase() === "SUBMITTED") {
-            if (isMounted) setIsLocked(true);
-          }
-        } catch (submissionErr) {
-          console.warn("No submission status found — may be unsubmitted.", submissionErr);
         }
 
       } catch (err) {
@@ -82,28 +114,32 @@ const DynamicQuestionnaireForm = () => {
   }, [userId, structure]);
 
 
-  useEffect(() => {
-    if (!template || !hasInteracted) return;
+    useEffect(() => {
+      if (!template || !hasInteracted || isLocked) return;
+      const debounce = setTimeout(() => {
+        saveDraft();
+      }, 60000); // 1 minute
+
+      return () => clearTimeout(debounce);
+    }, [answers]);
+
 
     const saveDraft = async () => {
       setSaving(true);
-      try {
-        await axios.post(`${BASE_URL}gfgp/assessment-responses/save`, {
-          userId,
-          structure,
-          version: template.version,
-          answers,
-        });
-      } catch (err) {
-        console.error("Failed to save draft", err);
-      } finally {
-        setSaving(false);
-      }
-    };
-
-    const debounce = setTimeout(saveDraft, 60000);  // 1 minute debounce
-    return () => clearTimeout(debounce);
-  }, [answers]);
+        try {
+          await axios.post(`${BASE_URL}gfgp/assessment-responses/save`, {
+            userId,
+            structure,
+            version: template.version,
+            answers,
+          });
+          setLastSaved(new Date());
+        } catch (err) {
+          console.error("Failed to save draft", err);
+        } finally {
+          setSaving(false);
+        }
+      };
 
   const shouldShowQuestion = question => {
     if (!question.conditional) return true;
@@ -267,16 +303,14 @@ const DynamicQuestionnaireForm = () => {
     );
   }
 
-  // Progress bar calculation
-  const allVisibleQuestions = template.sections
+    // Progress bar calculation
+    const allVisibleQuestions = template.sections
     .flatMap(section => section.questions)
-    .filter(shouldShowQuestion);
+    .filter(question => shouldShowQuestion(question));
 
-  const answeredCount = allVisibleQuestions.filter(q => {
-    const val = answers[q.id];
-    if (q.type === "CHECKBOX") return Array.isArray(val) && val.length > 0;
-    return val !== undefined && val !== "";
-  }).length;
+  const answeredCount = allVisibleQuestions.filter(
+    (q) => answers[q.id]?.answer && answers[q.id]?.answer !== ""
+  ).length;
 
   const progress = Math.round((answeredCount / allVisibleQuestions.length) * 100);
 
@@ -290,6 +324,24 @@ const DynamicQuestionnaireForm = () => {
         </Card.Body>
         <ProgressBar now={progress} label={`${progress}% completed`} />
       </Card>
+      <div className="row mb-3">
+        <div className="col-md-6">
+          <button
+            onClick={saveDraft}
+            disabled={saving || isLocked}
+            className="btn btn-warning btn-lg mb-4"
+          >
+            {saving ? "Saving..." : "Save Draft"}
+          </button>
+        </div>
+        <div className="col-md-6">
+          {lastSaved && (
+            <small className="text-muted">
+              Draft saved at {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </small>
+          )}
+        </div>
+      </div>
 
       {isLocked && (
         <Alert variant="info" className="text-center">
