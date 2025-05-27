@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Spinner, Alert, Badge, Button } from 'react-bootstrap';
+import { Spinner, Alert, Badge, Button, Tab, Nav, Row, Col, Fade } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import { FaCubes, FaBrain, FaLayerGroup } from 'react-icons/fa';
 import 'react-toastify/dist/ReactToastify.css';
@@ -9,25 +9,28 @@ const GFGP_OPTIONS = [
   {
     id: 'foundation',
     title: 'Foundation',
-    description: 'Basic controls for smaller organizations. Suitable for grantees with minimal operational complexity.',
-    color: '#007bff',
-    icon: <FaCubes size={28} />,
+    description:
+      'Basic controls for smaller organizations. Suitable for grantees with minimal operational complexity.',
+    color: '#64b5f6',
+    icon: <FaCubes size={28} style={{color:'#033973' }} />,
     badge: 'Best for small orgs',
   },
   {
     id: 'advanced',
     title: 'Advanced',
-    description: 'Includes all Foundation controls plus enhanced governance and financial risk controls.',
-    color: '#28a745',
-    icon: <FaBrain size={28} />,
+    description:
+      'Includes all Foundation controls plus enhanced governance and financial risk controls.',
+    color: '#04ca75',
+    icon: <FaBrain size={28} style={{color:'#04ca75' }} />,
     badge: 'Recommended for growing orgs',
   },
   {
     id: 'tiered',
     title: 'Tiered',
-    description: 'A dynamic version of GFGP that adapts to the size, complexity, and risk profile of the grantee.',
-    color: '#6f42c1',
-    icon: <FaLayerGroup size={28} />,
+    description:
+      'A dynamic version of GFGP that adapts to the size, complexity, and risk profile of the grantee.',
+    color: '#ffbf60',
+    icon: <FaLayerGroup size={28} style={{color:'#ffbf60' }} />,
     badge: 'Most flexible',
   },
 ];
@@ -87,73 +90,98 @@ const SelectStructure = () => {
         complexity, and risk exposure.
       </Alert>
 
-      <div className="row">
-        {GFGP_OPTIONS.map((option) => {
-          const isSelected = selected === option.id;
-
-          return (
-            <div className="col-md-4 mb-4" key={option.id}>
-              <div
-                className={`card h-100 shadow border-2`}
-                style={{
-                  borderColor: isSelected ? option.color : 'transparent',
-                  transform: isSelected ? 'scale(1.03)' : 'scale(1)',
-                  transition: 'all 0.2s ease-in-out',
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                }}
-              >
-                <div className="card-body d-flex flex-column">
-                  <div className="mb-2 d-flex justify-content-between align-items-center">
-                    <h5 className="mb-0">{option.title}</h5>
-                    {option.icon}
-                  </div>
-
-                  <Badge bg="info" className="mb-3 text-light">{option.badge}</Badge>
-
-                  <p className="text-muted" style={{ flexGrow: 1 }}>{option.description}</p>
-
-                  <button
-                    className={`btn ${isSelected ? 'btn-primary' : 'btn-outline-primary'} mt-auto`}
+      <Tab.Container id="structure-tabs" activeKey={selected || ''} onSelect={(k) => setSelected(k)}>
+        <Row>
+          <Col md={4} className="mb-3">
+            <Nav variant="pills" className="flex-column large-tab-nav">
+              {GFGP_OPTIONS.map((option) => (
+                <Nav.Item key={option.id}>
+                  <Nav.Link
+                    eventKey={option.id}
                     style={{
-                      backgroundColor: isSelected ? option.color : '',
-                      borderColor: option.color,
+                      color: '#000',
+                      borderLeftColor: option.color,
+                      borderLeftWidth: '5px',
+                      borderLeftStyle: 'solid',
+                      fontWeight: selected === option.id ? 'bold' : 'normal',
+                      fontSize: '1.25rem',
+                      padding: '1rem',
+                      backgroundColor: selected === option.id ? `${option.color}10` : 'white',
+                      transition: 'all 0.3s ease',
                     }}
-                    onClick={() => handleSelect(option.id)}
-                    disabled={loading}
+                    className="rounded shadow-sm mb-3 transition-tab"
                   >
-                    {loading && isSelected ? (
-                      <>
-                        <Spinner size="sm" className="me-2" /> Saving...
-                      </>
-                    ) : (
-                      `Select ${option.title}`
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+                    <div className="d-flex align-items-center">
+                      <span className="me-3">{option.icon}</span> {option.title}
+                    </div>
+                  </Nav.Link>
+                </Nav.Item>
+              ))}
+            </Nav>
+          </Col>
 
-      {/* After Save Confirmation */}
+          <Col md={8}>
+            <Tab.Content>
+              {GFGP_OPTIONS.map((option) => (
+                <div key={option.id} className="mb-4">
+                  <div
+                    className="card shadow-sm border-0 animated-pane"
+                    style={{
+                      borderLeftColor: option.color,
+                      backgroundColor: selected === option.id ? `${option.color}10` : '#fff',
+                      boxShadow: selected === option.id
+                        ? `0 0 0 0.25rem ${option.color}40`
+                        : '0 0 4px rgba(0, 0, 0, 0.05)',
+                    }}
+                  >
+                    <div className="card-body">
+                      <h3 className="d-flex justify-content-between align-items-center ">
+                        {option.title} <Badge bg="info">{option.badge}</Badge>
+                      </h3>
+                      <p className="text-muted">{option.description}</p>
+                      <Button
+                        variant={selected === option.id ? 'primary lg block' : 'outline-primary'}
+                        style={{
+                          borderColor: option.color,
+                          backgroundColor: selected === option.id ? option.color : '',
+                        }}
+                        onClick={() => handleSelect(option.id)}
+                        disabled={loading}
+                      >
+                        {loading && selected === option.id ? (
+                          <>
+                            <Spinner size="sm" className="me-2" /> Saving...
+                          </>
+                        ) : (
+                          `Select ${option.title}`
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </Tab.Content>
+
+          </Col>
+        </Row>
+      </Tab.Container>
+
       {saved && !loading && (
         <div className="text-center mt-4">
           <Alert variant="success" className="d-inline-block">
             ✅ Structure saved successfully!
           </Alert>
           <div className="mt-3 d-flex justify-content-center gap-3">
-            <Button variant="success btn-lg btn-block" onClick={handleProceed}>
+            <Button variant="success btn-lg" onClick={handleProceed}>
               Start Assessment
             </Button>
-            <Button variant="warning btn-lg btn-block" onClick={() => navigate('/grantee/dashboard')}>
+            <Button variant="warning btn-lg" onClick={() => navigate('/grantee/')}>
               Maybe Later
             </Button>
           </div>
         </div>
       )}
 
-      {/* Optional loading screen */}
       {loading && (
         <div
           className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
