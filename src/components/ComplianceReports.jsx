@@ -25,7 +25,7 @@ const STATUS_MAP = {
   "Not Applicable": { label: "N/A", variant: "secondary", points: 0 },
 };
 
-const ComplianceReports = ({ userId: propUserId, structure: propStructure }) => {
+const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) => {
   const [loading, setLoading] = useState(true);
   const [template, setTemplate] = useState(null);
   const [responses, setResponses] = useState({});
@@ -37,6 +37,7 @@ const ComplianceReports = ({ userId: propUserId, structure: propStructure }) => 
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const user = JSON.parse(localStorage.getItem("user"));
   const currentUserId = propUserId || user?.userId;
+  console.log('granteeId', currentUserId);
   const currentStructure = propStructure || localStorage.getItem("gfgpStructure");
 
   useEffect(() => {
@@ -45,8 +46,8 @@ const ComplianceReports = ({ userId: propUserId, structure: propStructure }) => 
 
       try {
         const [templateRes, responseRes] = await Promise.all([
-          axios.get(`${BASE_URL}gfgp/questionnaire-templates/structure/${currentStructure}`),
-          axios.get(`${BASE_URL}gfgp/assessment-submissions/${currentUserId}/${currentStructure}`),
+          axios.get(`${BASE_URL}gfgp/questionnaire-templates-report/user/${currentUserId}`),
+          axios.get(`${BASE_URL}gfgp/assessment-submissions-report/user/${currentUserId}`),
         ]);
 
         const [templateObj] = templateRes.data;

@@ -85,7 +85,7 @@ const SharedReportsList = () => {
       case 'GRANTED':
         return (
           <Link
-            to={`/grantor/view-report/${report.userId}/${report.structure}`}
+            to={`/grantor/view-report/${report.granteeId}/${report.structure}`}
             className="btn btn-sm btn-outline-primary"
           >
             View Report

@@ -108,7 +108,7 @@ const getSidebarLinks = (role, hasSelectedStructure) => {
       return [
         { path: '/grantee/', label: 'Home', icon: 'bi-home' },
         { path: '/grantee/select-structure', label: 'Select GFGP Structure', icon: 'bi-diagram-3' },
-        { path: '/grantee/questionnaire', label: 'Start Questionnaire', icon: 'bi-ui-checks', disabled: !hasSelectedStructure },
+        { path: '/grantee/questionnaire', label: 'GFGP Self Assessment', icon: 'bi-ui-checks', disabled: !hasSelectedStructure },
         { path: '/grantee/compliance-reports', label: 'Compliance Reports', icon: 'bi-bar-chart-line' },
         { path: '/grantee/documents', label: 'Document Repository', icon: 'bi-folder2-open' },
       ];
