@@ -19,10 +19,11 @@ import {
 } from "recharts";
 
 const STATUS_MAP = {
-  Yes: { label: "Met", variant: "success", points: 2 },
-  "In-progress": { label: "Partially Met", variant: "warning", points: 1 },
-  No: { label: "Not Met", variant: "danger", points: 0 },
-  "Not Applicable": { label: "N/A", variant: "secondary", points: 0 },
+  Yes: { label: "Met", variant: "success", color: "#198754", points: 2 },
+  "In-progress": { label: "Partially Met", variant: "warning", color: "#ffc107", points: 1 },
+  No: { label: "Not Met", variant: "danger", color: "#dc3545", points: 0 },
+  "Not Applicable": { label: "N/A", variant: "secondary", color: "#6c757d", points: 0 },
+  "No Response": { label: "No Response", variant: "light", color: "#f8f9fa", points: 0 }, // Using a very light gray for No Response
 };
 
 const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) => {
@@ -42,7 +43,11 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) 
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!user?.userId || !currentStructure) return;
+      if (!user?.userId || !currentStructure) {
+        setError("Missing user or questionnaire structure. Please ensure you are logged in and have selected a questionnaire.");
+        setLoading(false);
+        return;
+      }
 
       try {
         const [templateRes, responseRes] = await Promise.all([
@@ -56,44 +61,62 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) 
             ? JSON.parse(templateObj.content)
             : templateObj.content;
 
-        let parsedAnswers = {};
+        let flattenedAnswers = {}; // This will hold our flat answers
         try {
           const raw = responseRes.data.answers;
-          parsedAnswers = typeof raw === "string" ? JSON.parse(raw) : raw || {};
+          const submittedAnswers = typeof raw === "string" ? JSON.parse(raw) : raw || {};
+
+          // Flatten the nested submitted answers structure into a flat object keyed by questionId
+          if (submittedAnswers) {
+            Object.values(submittedAnswers).forEach(section => {
+              if (section && section.subsections) { // Ensure section is not null/undefined
+                Object.values(section.subsections).forEach(subsection => {
+                  if (subsection && subsection.questions) { // Ensure subsection is not null/undefined
+                    Object.entries(subsection.questions).forEach(([questionId, answerData]) => {
+                      flattenedAnswers[questionId] = answerData;
+                    });
+                  }
+                });
+              }
+            });
+          }
         } catch (e) {
-          console.error("Failed to parse answers", e);
-          setError("Error parsing assessment answers.");
+          console.error("Failed to parse or flatten answers from submission report:", e);
+          setError("Error parsing or flattening assessment answers.");
           return;
         }
 
         setTemplate(parsedTemplate);
-        setResponses(parsedAnswers);
+        setResponses(flattenedAnswers); // Set the flattened answers to state
         const recMap = {};
 
+        // Fetch recommendations for each section
         await Promise.all(
-          parsedTemplate.sections.map(async (section) => {
+          (parsedTemplate.sections || []).map(async (section) => {
             try {
               const recRes = await axios.get(`${BASE_URL}gfgp/recommendations/fetch?sectionTitle=${encodeURIComponent(section.title)}`);
               recMap[section.title] = recRes.data || [];
             } catch (err) {
-              console.warn(`No recommendations found for ${section.sectionTitle}`, err);
-              recMap[section.sectionTitle] = [];
+              console.warn(`No recommendations found for ${section.title}`, err);
+              recMap[section.title] = [];
             }
           })
         );
 
         setRecommendations(recMap);
 
-        setCompleteness(responseRes.data.completeness || null);
-        setCompliance(responseRes.data.compliance || null);
+        // Fetch overall completeness and compliance from the submission report
+        setCompleteness(responseRes.data.completeness ?? null);
+        setCompliance(responseRes.data.compliance ?? null);
+
       } catch (err) {
-        console.error(err);
-        setError("Failed to load compliance report.");
+        console.error("Error fetching data for compliance report:", err);
+        setError(`Failed to load compliance report: ${err.message || "Unknown error"}`);
       } finally {
         setLoading(false);
       }
 
-      //audit_logs
+      // Audit logs (only if not a prop-driven view, e.g., for self-assessment)
       if (!propUserId) {
         try {
           await axios.post(`${BASE_URL}gfgp/audit/log`, {
@@ -109,10 +132,17 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) 
     };
 
     fetchData();
-  }, []);
+    // Add currentUserId and currentStructure to dependency array
+  }, [BASE_URL, currentUserId, currentStructure, propUserId, user?.userId]);
 
+  // Helper function to get scores for a section
   const getSectionScores = (section) => {
-    const applicableQuestions = section.questions.filter(
+    // Flatten all questions from all subsections within this section
+    const allQuestionsInSection = (section.subsections || []).flatMap(
+      (subsection) => subsection.questions || []
+    );
+
+    const applicableQuestions = allQuestionsInSection.filter(
       (q) => responses[q.id]?.answer !== "Not Applicable"
     );
 
@@ -122,11 +152,14 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) 
 
     applicableQuestions.forEach((q) => {
       const answer = responses[q.id]?.answer;
+      // Get points from STATUS_MAP, default to 0 if answer is not in map or points are undefined
       const points = STATUS_MAP[answer]?.points ?? 0;
       totalPoints += points;
+      // Compliance specifically counts 'Yes' points
       if (answer === "Yes") yesPoints += 2;
     });
 
+    // Calculate percentages, handling division by zero
     const completenessPct = totalPossible === 0 ? 0 : (totalPoints / totalPossible) * 100;
     const compliancePct = totalPossible === 0 ? 0 : (yesPoints / totalPossible) * 100;
 
@@ -136,16 +169,24 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) 
     };
   };
 
+  // Helper function to prepare data for the chart
   const getChartData = () => {
     if (!template) return [];
 
-    return template.sections.map((section) => {
-      let counts = { Met: 0, "Partially Met": 0, "Not Met": 0, "N/A": 0 };
+    return (template.sections || []).map((section) => {
+      // Initialize counts for each status, including 'No Response'
+      let counts = { "Met": 0, "Partially Met": 0, "Not Met": 0, "N/A": 0, "No Response": 0 };
 
-      section.questions.forEach((q) => {
+      // Flatten all questions from all subsections within this section
+      const allQuestionsInSection = (section.subsections || []).flatMap(
+        (subsection) => subsection.questions || []
+      );
+
+      allQuestionsInSection.forEach((q) => {
         const answer = responses[q.id]?.answer;
-        const status = STATUS_MAP[answer]?.label || "N/A";
-        if (status in counts) counts[status]++;
+        // Get the label for the answer status, defaulting to "No Response" if not found
+        const statusLabel = STATUS_MAP[answer]?.label || STATUS_MAP["No Response"].label;
+        counts[statusLabel]++;
       });
 
       return {
@@ -175,15 +216,16 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) 
         <strong>Structure:</strong> {currentStructure}
       </p>
 
+      {/* Overall Completeness and Compliance */}
       {completeness !== null && compliance !== null && (
         <Alert variant="info">
-          <strong>Completeness:</strong> {completeness.toFixed(1)}% | {" "}
-          <strong>Compliance:</strong> {compliance.toFixed(1)}%
+          <strong>Completeness:</strong> {completeness}% | {" "}
+          <strong>Compliance:</strong> {compliance}%
         </Alert>
       )}
 
       {/* SECTION TABLES */}
-      {template.sections.map((section, index) => {
+      {(template.sections || []).map((section, index) => {
         const sectionScore = getSectionScores(section);
         return (
           <Card className="mb-4 shadow-sm" key={section.sectionId}>
@@ -197,55 +239,60 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) 
                 <strong>Compliance:</strong> {sectionScore.compliance}%
               </Alert>
 
-              <Table bordered hover>
-                <thead className="table-light">
-                  <tr>
-                    <th>Question</th>
-                    <th>Status</th>
-                    <th>Evidence</th>
-                    <th>Justification (if N/A)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {section.questions.map((q) => {
-                    const response = responses[q.id] || {};
-                    const answer = response.answer;
-                    const status = STATUS_MAP[answer] || {
-                      label: "No Response",
-                      variant: "light",
-                      points: 0,
-                    };
-
-                    return (
-                      <tr key={q.id}>
-                        <td>{q.questionText}</td>
-                        <td>
-                          <OverlayTrigger
-                            placement="top"
-                            overlay={<Tooltip>{`${status.points} points`}</Tooltip>}
-                          >
-                            <span className={`badge bg-${status.variant}`}>{status.label}</span>
-                          </OverlayTrigger>
-                        </td>
-                        <td>
-                          {response.evidence ? (
-                            <a
-                              href={`${BASE_URL.replace(/\/+$/, "")}${response.evidence}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              View Evidence
-                            </a>
-                          ) : (
-                            "—"
-                          )}
-                        </td>
-                        <td>{response.justification || "—"}</td>
+              {/* Iterate through subsections */}
+              {(section.subsections || []).map((subsection) => (
+                <div key={subsection.subsectionId} className="mb-3 ps-3 border-start">
+                  <h6 className="text-secondary mt-3">{subsection.title}</h6>
+                  <Table bordered hover size="sm"> {/* Added size="sm" for compact table */}
+                    <thead className="table-light">
+                      <tr>
+                        <th>Question</th>
+                        <th>Status</th>
+                        <th>Evidence</th>
+                        <th>Justification (if N/A)</th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </Table>
+                    </thead>
+                    <tbody>
+                      {/* Iterate through questions within the current subsection */}
+                      {(subsection.questions || []).map((q) => {
+                        const response = responses[q.id] || {};
+                        const answer = response.answer;
+                        // Determine status using STATUS_MAP, defaulting to "No Response"
+                        const status = STATUS_MAP[answer] || STATUS_MAP["No Response"];
+
+                        return (
+                          <tr key={q.id}>
+                            <td>{q.questionText}</td>
+                            <td>
+                              <OverlayTrigger
+                                placement="top"
+                                overlay={<Tooltip>{`${status.points} points`}</Tooltip>}
+                              >
+                                {/* Badge for status, using status.variant for Bootstrap color classes */}
+                                <span className={`badge bg-${status.variant}`}>{status.label}</span>
+                              </OverlayTrigger>
+                            </td>
+                            <td>
+                              {response.evidence ? (
+                                <a
+                                  href={`${BASE_URL.replace(/\/+$/, "")}${response.evidence}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  View Evidence
+                                </a>
+                              ) : (
+                                "—"
+                              )}
+                            </td>
+                            <td>{response.justification || "—"}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </Table>
+                </div>
+              ))}
                 {recommendations[section.title]?.length > 0 && (
                   <div className="mt-4">
                     <h6 className="text-primary d-flex align-items-center mb-3">
@@ -285,10 +332,12 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) 
               <YAxis type="category" dataKey="section" width={150} />
               <RechartsTooltip />
               <Legend />
-              <Bar dataKey="Met" stackId="a" fill="#198754" />
-              <Bar dataKey="Partially Met" stackId="a" fill="#ffc107" />
-              <Bar dataKey="Not Met" stackId="a" fill="#dc3545" />
-              <Bar dataKey="N/A" stackId="a" fill="#6c757d" />
+              {/* Bars for each status. Ensure colors match your STATUS_MAP colors */}
+              <Bar dataKey="Met" stackId="a" fill={STATUS_MAP.Yes.color} />
+              <Bar dataKey="Partially Met" stackId="a" fill={STATUS_MAP["In-progress"].color} />
+              <Bar dataKey="Not Met" stackId="a" fill={STATUS_MAP.No.color} />
+              <Bar dataKey="N/A" stackId="a" fill={STATUS_MAP["Not Applicable"].color} />
+              <Bar dataKey="No Response" stackId="a" fill={STATUS_MAP["No Response"].color} />
             </BarChart>
           </ResponsiveContainer>
         </Card.Body>

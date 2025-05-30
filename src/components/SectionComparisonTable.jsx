@@ -6,6 +6,7 @@ const STATUS_MAP = {
   'In-progress': 'In-progress',
   No: 'No',
   'Not Applicable': 'N/A',
+  'No Response': '—',
 };
 
 const SectionComparisonTable = ({ template, grantees, granteeAnswers }) => {
@@ -31,16 +32,20 @@ const SectionComparisonTable = ({ template, grantees, granteeAnswers }) => {
                 </tr>
               </thead>
               <tbody>
-                {section.questions.map((q) => (
-                  <tr key={q.id}>
-                    <td>{q.questionText}</td>
-                    {grantees.map((g) => {
-                      const response = granteeAnswers[g.id]?.[q.id];
-                      const label = STATUS_MAP[response?.answer] || '—';
-                      return <td key={g.id}>{label}</td>;
-                    })}
-                  </tr>
-                ))}
+                {/* CORRECTED: Flatten questions from all subsections within this section */}
+                {(section.subsections || [])
+                  .flatMap(subsection => subsection.questions || [])
+                  .map((q) => (
+                    <tr key={q.id}>
+                      <td>{q.questionText}</td>
+                      {grantees.map((g) => {
+                        const response = granteeAnswers[g.id]?.[q.id];
+                        // Use STATUS_MAP for consistent labels, default to 'No Response' (or '—')
+                        const label = STATUS_MAP[response?.answer] || STATUS_MAP['No Response'];
+                        return <td key={g.id}>{label}</td>;
+                      })}
+                    </tr>
+                  ))}
               </tbody>
             </Table>
           </Card.Body>

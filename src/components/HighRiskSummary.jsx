@@ -1,8 +1,8 @@
-// @components/HighRiskSummary.jsx
 import React from 'react';
 
 const HighRiskSummary = ({ template, grantees, granteeAnswers, isHighRisk }) => {
-  if (!template || grantees.length === 0) return null;
+  // Add a check for template.sections to prevent errors if sections are not yet loaded
+  if (!template || grantees.length === 0 || !template.sections) return null;
 
   return (
     <div className="card mt-4">
@@ -14,13 +14,20 @@ const HighRiskSummary = ({ template, grantees, granteeAnswers, isHighRisk }) => 
             let highRiskCount = 0;
             const highRiskDetails = [];
 
+            // Iterate over each section in the template
             template.sections.forEach((section) => {
-              section.questions.forEach((q) => {
+              // CORRECTED: Flatten all questions from all subsections within this section
+              const allQuestionsInSection = (section.subsections || []).flatMap(
+                (subsection) => subsection.questions || []
+              );
+
+              // Now iterate over the flattened list of questions
+              allQuestionsInSection.forEach((q) => {
                 const answer = answers[q.id]?.answer;
                 if (isHighRisk(answer)) {
                   highRiskCount++;
                   highRiskDetails.push({
-                    section: section.title,
+                    section: section.title, // Use section title from the parent section
                     question: q.questionText,
                     answer
                   });

@@ -44,10 +44,21 @@ const GranteeComparison = () => {
   const exportToCSV = () => {
     const csvRows = [];
 
+    // Ensure template and sections exist
+    if (!template?.sections) {
+      console.warn("No template sections available for CSV export.");
+      return;
+    }
+
     template.sections.forEach((section) => {
       csvRows.push([`Section: ${section.title}`]);
       csvRows.push(['Question', ...selectedGrantees.map(g => g.granteeName || `Grantee #${g.userId}`)]);
-      section.questions.forEach((q) => {
+
+      // CORRECTED: Flatten questions from all subsections for CSV export
+      const allQuestionsInSection = (section.subsections || [])
+        .flatMap(subsection => subsection.questions || []);
+
+      allQuestionsInSection.forEach((q) => {
         const row = [q.questionText];
         selectedGrantees.forEach(grantee => {
           const ans = granteeAnswers[grantee.id]?.[q.id]?.answer || '—';
@@ -56,7 +67,7 @@ const GranteeComparison = () => {
         csvRows.push(row);
       });
 
-      csvRows.push([]);
+      csvRows.push([]); // Add an empty row for separation between sections in CSV
     });
 
     const csv = Papa.unparse(csvRows);
@@ -75,27 +86,48 @@ const GranteeComparison = () => {
         setGrantees(granteeList);
 
         if (granteeList.length > 0) {
-          setSelectedGrantees(granteeList.slice(0, 2));
+          setSelectedGrantees(granteeList.slice(0, 2)); // Select first two by default
           const tmpl = await fetchTemplate(granteeList[0].structure);
           setTemplate(tmpl);
         }
       } catch (err) {
         console.error('Failed to fetch assessments', err);
+        // Optionally set an error state to display to the user
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, []);
+  }, [BASE_URL]); // Depend on BASE_URL
 
   const parseAnswers = (answers) => {
     try {
-      return typeof answers === 'string' ? JSON.parse(answers) : answers || {};
-    } catch {
+      // Assuming 'answers' might come as a stringified JSON
+      const rawAnswers = typeof answers === 'string' ? JSON.parse(answers) : answers;
+
+      // Flatten the nested structure if it exists
+      const flattened = {};
+      if (rawAnswers) {
+        Object.values(rawAnswers).forEach(section => {
+          if (section && section.subsections) {
+            Object.values(section.subsections).forEach(subsection => {
+              if (subsection && subsection.questions) {
+                Object.entries(subsection.questions).forEach(([questionId, answerData]) => {
+                  flattened[questionId] = answerData;
+                });
+              }
+            });
+          }
+        });
+      }
+      return flattened;
+    } catch (e) {
+      console.error("Error parsing or flattening answers:", e);
       return {};
     }
   };
+
 
   const granteeAnswers = selectedGrantees.reduce((acc, grantee) => {
     acc[grantee.id] = parseAnswers(grantee.answers);
@@ -103,7 +135,7 @@ const GranteeComparison = () => {
   }, {});
 
   if (loading) return <p className="text-center mt-5">Loading comparison...</p>;
-  if (!template || selectedGrantees.length === 0) return <p>No data to compare.</p>;
+  if (!template || selectedGrantees.length === 0) return <p>No data to compare. Please select grantees or ensure data is available.</p>;
 
   return (
     <div id="comparisonContent">
@@ -120,6 +152,7 @@ const GranteeComparison = () => {
               value={selectedGrantees.map(g => ({ value: g, label: g.granteeName || `Grantee #${g.userId}` }))}
               onChange={(selected) => setSelectedGrantees(selected.map(s => s.value))}
               className="mb-3"
+              placeholder="Select Grantees for Comparison..."
             />
           </div>
         </div>
@@ -132,7 +165,7 @@ const GranteeComparison = () => {
           template={template}
           grantees={selectedGrantees}
           granteeAnswers={granteeAnswers}
-          isHighRisk={isHighRisk}
+          isHighRisk={isHighRisk} // isHighRisk is not used in SectionComparisonTable, consider if it's meant for another component or if you want to display risk per question here.
         />
 
         <HighRiskSummary
@@ -151,6 +184,7 @@ const GranteeComparison = () => {
               <button className={`btn btn-sm ${chartType === 'line' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setChartType('line')}>Line</button>
             </div>
 
+            {/* These chart components will also need similar flattening logic internally if they operate on template.sections.questions directly */}
             {chartType === 'bar' && <ComparisonBarChart grantees={selectedGrantees} granteeAnswers={granteeAnswers} template={template} />}
             {chartType === 'pie' && <ComparisonPieChart grantees={selectedGrantees} granteeAnswers={granteeAnswers} template={template} />}
             {chartType === 'line' && <ComparisonLineChart grantees={selectedGrantees} granteeAnswers={granteeAnswers} template={template} />}
