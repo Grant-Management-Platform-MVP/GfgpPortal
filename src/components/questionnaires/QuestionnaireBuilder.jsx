@@ -89,7 +89,7 @@ const DynamicQuestionnaireBuilder = () => {
    * Adds a new empty subsection to a specified section.
    * @param {number} sectionIndex The index of the section to add the subsection to.
    */
-    const addSubsection = (sectionIndex) => {
+  const addSubsection = (sectionIndex) => {
     setSections((prevSections) => {
       const updatedSections = [...prevSections]; // Shallow copy of sections array
       const sectionToUpdate = { ...updatedSections[sectionIndex] }; // Deep copy the specific section object
@@ -145,26 +145,43 @@ const DynamicQuestionnaireBuilder = () => {
    */
   const addSubsectionQuestion = (sectionIndex, subIndex) => {
     setSections((prevSections) => {
-      const updated = [...prevSections];
-      updated[sectionIndex].subsections[subIndex].questions.push({
-        id: uuidv4(),
-        questionCode: "",
-        questionText: "",
-        type: "SINGLE_CHOICE",
-        required: true,
-        options: [...FIXED_OPTIONS],
-        guidance: "",
-        conditional: null,
-        uploadEvidence: true,
-        weight: 1, // Initialize question with 1 unit weight for frontend calculation
-        userResponse: {
-          answer: "",
-          justification: "",
-          evidence: null,
-        },
+      const newSections = prevSections.map((section, sIdx) => {
+        if (sIdx === sectionIndex) {
+          return {
+            ...section,
+            subsections: section.subsections.map((sub, ssIdx) => {
+              if (ssIdx === subIndex) {
+                return {
+                  ...sub,
+                  questions: [
+                    ...(sub.questions || []),
+                    {
+                      id: uuidv4(),
+                      questionCode: "",
+                      questionText: "",
+                      type: "SINGLE_CHOICE",
+                      required: true,
+                      options: [...FIXED_OPTIONS],
+                      guidance: "",
+                      conditional: null,
+                      uploadEvidence: true,
+                      weight: 1,
+                      userResponse: {
+                        answer: "",
+                        justification: "",
+                        evidence: null,
+                      },
+                    },
+                  ],
+                };
+              }
+              return sub;
+            }),
+          };
+        }
+        return section;
       });
-      // Recalculate weights for all sections after adding a new question
-      return recalculateSectionWeights(updated);
+      return recalculateSectionWeights(newSections);
     });
   };
 
@@ -394,7 +411,7 @@ const DynamicQuestionnaireBuilder = () => {
 
   return (
     <div className="container py-4">
-       <h1 className="mb-4 h3">Create Questionnaire</h1>
+      <h1 className="mb-4 h3">Create Questionnaire</h1>
       <div className="mb-3">
         <label htmlFor="structure" className="form-label">Structure</label>
         <select
@@ -518,9 +535,10 @@ const DynamicQuestionnaireBuilder = () => {
                         className="border p-3 rounded bg-light mb-3"
                       >
                         {/* <strong>Question {questionIndex + 1} (Units: {q.weight})</strong> */}
-                        <input
+                        <textarea
                           className="form-control mb-2"
                           placeholder="Question Text"
+                          rows={6}
                           value={q.questionText}
                           onChange={(e) =>
                             updateSubsectionQuestionField(
@@ -531,7 +549,7 @@ const DynamicQuestionnaireBuilder = () => {
                               e.target.value
                             )
                           }
-                        />
+                        ></textarea>
                         <input
                           className="form-control mb-2"
                           placeholder="Question Code (e.g., Q1.1)"
@@ -549,6 +567,7 @@ const DynamicQuestionnaireBuilder = () => {
                         <textarea
                           className="form-control mb-2"
                           placeholder="Guidance (optional)"
+                          rows={4}
                           value={q.guidance}
                           onChange={(e) =>
                             updateSubsectionQuestionField(
