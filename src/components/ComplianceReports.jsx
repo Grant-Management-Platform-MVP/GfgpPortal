@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import {
   Spinner,
@@ -6,7 +6,7 @@ import {
   Table,
   Alert,
   OverlayTrigger,
-  Tooltip,
+  Tooltip, Modal, Button, Form
 } from "react-bootstrap";
 import {
   BarChart,
@@ -17,6 +17,8 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 const STATUS_MAP = {
   Yes: { label: "Met", variant: "success", color: "#198754", points: 2 },
@@ -40,6 +42,77 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) 
   const currentUserId = propUserId || user?.userId;
   console.log('granteeId', currentUserId);
   const currentStructure = propStructure || localStorage.getItem("gfgpStructure");
+  const [showSendBackModal, setShowSendBackModal] = useState(false);
+  const [sendBackReason, setSendBackReason] = useState("");
+  const [hasMissingData, setHasMissingData] = useState(false);
+  const [questionnaire, setQuestionnaire] = useState({});
+  const [isSendingBack, setIsSendingBack] = useState(false);
+  const navigate = useNavigate();
+
+
+  // Check for missing fields (status, justification, evidence) for each answered question
+  const hasUnansweredQuestions = useCallback(() => {
+    if (!responses || Object.keys(responses).length === 0) return false;
+
+    return Object.values(responses).some((answer) => {
+      // answer is expected to be an object like { answer: "Yes", status, evidence, justification }
+      const hasAnswer = !!answer?.answer;
+      const isStatusEmpty = !answer?.status;
+      const isEvidenceEmpty = !answer?.evidence;
+      const isJustificationEmpty = !answer?.justification;
+
+      return hasAnswer && (isStatusEmpty || isEvidenceEmpty || isJustificationEmpty);
+    });
+  }, [responses]);
+
+  useEffect(() => {
+    if (!loading) {
+      const missing = hasUnansweredQuestions();
+      setHasMissingData(missing);
+    }
+  }, [loading, hasUnansweredQuestions]);
+
+
+  // Handler to open modal
+  const openSendBackModal = () => setShowSendBackModal(true);
+  // Handler to close modal
+  const closeSendBackModal = () => {
+    setSendBackReason(""); // clear reason on close
+    setShowSendBackModal(false);
+  };
+
+  // Mock submit handler (replace with real API call)
+  const handleSendBackSubmit = async (reason) => {
+    if (!reason.trim()) {
+      toast.warn("Please provide a reason before sending back.");
+      return;
+    }
+
+    setIsSendingBack(true);
+
+    try {
+      const payload = {
+        userId: currentUserId, //sent_by
+        reason,
+        structure: currentStructure,
+        assessmentId: questionnaire?.id,
+      };
+
+      const response = await axios.post(`${BASE_URL}gfgp/assessment-submissions/send-back`, payload);
+
+      console.log("Send back response:", response.data);
+      closeSendBackModal();
+      toast.success("Assessment Report sent back successfully!");
+      setTimeout(() => {
+        navigate("/grantor/");
+      }, 1500);
+    } catch (e) {
+      console.error("Send back failed:", e);
+      toast.error("Failed to send back. Please try again later.");
+    } finally {
+      setIsSendingBack(false);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -108,6 +181,7 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) 
         // Fetch overall completeness and compliance from the submission report
         setCompleteness(responseRes.data.completeness ?? null);
         setCompliance(responseRes.data.compliance ?? null);
+        setQuestionnaire(responseRes.data || {});
 
       } catch (err) {
         console.error("Error fetching data for compliance report:", err);
@@ -212,6 +286,20 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) 
   return (
     <div className="mt-4">
       <h4>Sectionwise Compliance Report</h4>
+      <div className="flex flex-col items-end gap-2 mt-6">
+        {user.role === 'GRANTOR' &&
+          questionnaire?.status === 'SUBMITTED' &&
+          hasMissingData && (
+            <>
+              <span className="text-sm text-red-600 font-medium">
+                Assessment appears incomplete
+              </span>
+              <Button variant="warning lg" onClick={openSendBackModal}>
+                Send Back Assessment to Grantee
+              </Button>
+            </>
+          )}
+      </div>
       <p>
         <strong>Structure:</strong> {currentStructure}
       </p>
@@ -293,26 +381,26 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) 
                   </Table>
                 </div>
               ))}
-                {recommendations[section.title]?.length > 0 && (
-                  <div className="mt-4">
-                    <h6 className="text-primary d-flex align-items-center mb-3">
-                      <i className="bi bi-lightbulb me-2"></i> {/* Bootstrap icon */}
-                      Improvement Recommendations
-                    </h6>
-                    <div className="list-group">
-                      {recommendations[section.title].map((rec, i) => (
-                        <div key={i} className="list-group-item">
-                          {rec.issueSummary && (
-                            <div className="fw-bold text-muted small mb-1">
-                              Issue: {rec.issueSummary}
-                            </div>
-                          )}
-                          <div>{rec.recommendationText || <em>No recommendation provided.</em>}</div>
-                        </div>
-                      ))}
-                    </div>
+              {recommendations[section.title]?.length > 0 && (
+                <div className="mt-4">
+                  <h6 className="text-primary d-flex align-items-center mb-3">
+                    <i className="bi bi-lightbulb me-2"></i> {/* Bootstrap icon */}
+                    Improvement Recommendations
+                  </h6>
+                  <div className="list-group">
+                    {recommendations[section.title].map((rec, i) => (
+                      <div key={i} className="list-group-item">
+                        {rec.issueSummary && (
+                          <div className="fw-bold text-muted small mb-1">
+                            Issue: {rec.issueSummary}
+                          </div>
+                        )}
+                        <div>{rec.recommendationText || <em>No recommendation provided.</em>}</div>
+                      </div>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
             </Card.Body>
           </Card>
         );
@@ -342,6 +430,38 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) 
           </ResponsiveContainer>
         </Card.Body>
       </Card>
+      {/* Modal */}
+      <Modal show={showSendBackModal} onHide={closeSendBackModal} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Send Back Reason</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form.Group controlId="sendBackReason">
+            <Form.Label>Please provide a reason</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              value={sendBackReason}
+              onChange={(e) => setSendBackReason(e.target.value)}
+              placeholder="Enter reason here..."
+            />
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={closeSendBackModal}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={() => handleSendBackSubmit(sendBackReason)} disabled={isSendingBack}>
+            {isSendingBack ? (
+              <span className="flex items-center gap-2">
+                <Spinner size="sm" /> Sending...
+              </span>
+            ) : (
+              "Send Back Assessment"
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };
