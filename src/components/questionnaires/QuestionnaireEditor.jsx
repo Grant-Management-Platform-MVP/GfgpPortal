@@ -5,6 +5,8 @@ import { v4 as uuidv4 } from "uuid";
 import { ChevronDown, ChevronUp, Plus, Trash, Eye } from "lucide-react"; // Icons from lucide-react
 import { toast } from 'react-toastify'; // Toast notifications
 import 'react-toastify/dist/ReactToastify.css';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 // Fixed options for single choice questions, mirroring DynamicQuestionnaireBuilder
 const FIXED_OPTIONS = ["Yes", "In-progress", "No", "Not Applicable"];
@@ -511,14 +513,19 @@ const QuestionnaireEditor = () => {
                   value={section.title}
                   onChange={(e) => updateSectionField(sectionIndex, "title", e.target.value)}
                 />
-                <textarea
-                  className="form-control mb-2"
-                  placeholder="Section Description"
-                  rows={5}
+                <ReactQuill
+                  style={{ minHeight: "110px", marginBottom: "1rem" }}
+                  theme="snow"
                   value={section.description}
-                  onChange={(e) => updateSectionField(sectionIndex, "description", e.target.value)}
+                  placeholder="Section Description"
+                  onChange={(content) =>
+                    updateSectionField(
+                      sectionIndex,
+                      "description",
+                      content
+                    )
+                  }
                 />
-
                 <div className="d-flex gap-3 mb-3">
                   <strong>Subsections</strong>
                   <button
@@ -554,13 +561,18 @@ const QuestionnaireEditor = () => {
                         updateSubsectionField(sectionIndex, subIndex, "title", e.target.value)
                       }
                     />
-                    <textarea
-                      className="form-control mb-2"
-                      placeholder="Subsection Description"
-                      rows={5}
+                    <ReactQuill
+                      style={{ minHeight: "110px", marginBottom: "1rem" }}
+                      theme="snow"
                       value={sub.description}
-                      onChange={(e) =>
-                        updateSubsectionField(sectionIndex, subIndex, "description", e.target.value)
+                      placeholder="Subsection Description"
+                      onChange={(content) =>
+                        updateSubsectionField(
+                          sectionIndex,
+                          subIndex,
+                          "description",
+                          content
+                        )
                       }
                     />
 
@@ -593,18 +605,18 @@ const QuestionnaireEditor = () => {
 
                         <Form.Group className="mb-2">
                           <Form.Label>Question Text</Form.Label>
-                          <Form.Control
-                            as="textarea"
-                            rows={4}
-                            placeholder="Question Text"
+                          <ReactQuill
+                            style={{ minHeight: "110px", marginBottom: "1rem" }}
+                            theme="snow"
                             value={q.questionText}
-                            onChange={(e) =>
+                            placeholder="Question Text"
+                            onChange={(content) =>
                               updateSubsectionQuestionField(
                                 sectionIndex,
                                 subIndex,
                                 questionIndex,
                                 "questionText",
-                                e.target.value
+                                content
                               )
                             }
                           />
@@ -627,18 +639,18 @@ const QuestionnaireEditor = () => {
                         </Form.Group>
                         <Form.Group className="mb-2">
                           <Form.Label>Guidance (optional)</Form.Label>
-                          <Form.Control
-                            as="textarea"
-                            rows={6}
-                            placeholder="Guidance"
+                          <ReactQuill
+                            style={{ minHeight: "110px", marginBottom: "1rem" }}
+                            theme="snow"
                             value={q.guidance}
-                            onChange={(e) =>
+                            placeholder="Guidance"
+                            onChange={(content) =>
                               updateSubsectionQuestionField(
                                 sectionIndex,
                                 subIndex,
                                 questionIndex,
                                 "guidance",
-                                e.target.value
+                                content
                               )
                             }
                           />
@@ -750,7 +762,7 @@ const QuestionnaireEditor = () => {
         <button
           className="btn btn-primary"
           onClick={handleSubmit}
-          // disabled={loading || !questionnaireStructure || !questionnaireTitle || sections.length === 0}
+        // disabled={loading || !questionnaireStructure || !questionnaireTitle || sections.length === 0}
         >
           {loading ? 'Saving...' : '💾 Save Changes'}
         </button>

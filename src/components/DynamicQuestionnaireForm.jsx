@@ -73,18 +73,18 @@ const DynamicQuestionnaireForm = () => {
             // Flatten submitted answers for the answers state
             const flattenedSubmitted = {};
             if (parsedSubmitted) {
-                // Iterate through the nested structure to flatten it
-                Object.values(parsedSubmitted).forEach(section => {
-                    if (section.subsections) {
-                        Object.values(section.subsections).forEach(subsection => {
-                            if (subsection.questions) {
-                                Object.entries(subsection.questions).forEach(([questionId, answerData]) => {
-                                    flattenedSubmitted[questionId] = answerData;
-                                });
-                            }
-                        });
+              // Iterate through the nested structure to flatten it
+              Object.values(parsedSubmitted).forEach(section => {
+                if (section.subsections) {
+                  Object.values(section.subsections).forEach(subsection => {
+                    if (subsection.questions) {
+                      Object.entries(subsection.questions).forEach(([questionId, answerData]) => {
+                        flattenedSubmitted[questionId] = answerData;
+                      });
                     }
-                });
+                  });
+                }
+              });
             }
 
             if (isMounted) {
@@ -289,11 +289,11 @@ const DynamicQuestionnaireForm = () => {
         };
         // Clear justification if answer is not 'Not Applicable' and current answer was 'Not Applicable'
         if (value !== "Not Applicable" && prev[question.id]?.answer === "Not Applicable") {
-            delete newState[question.id].justification;
+          delete newState[question.id].justification;
         }
         // Clear evidence if answer is not 'Yes' and current answer was 'Yes'
         if (value !== "Yes" && prev[question.id]?.answer === "Yes") {
-            delete newState[question.id].evidence;
+          delete newState[question.id].evidence;
         }
         return newState;
       });
@@ -339,24 +339,24 @@ const DynamicQuestionnaireForm = () => {
         {response.answer === "Yes" && question.uploadEvidence && (
           <>
             <Form.Control
-                type="file"
-                className="mt-2"
-                onChange={(e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                        handleFileUpload(file, question.id);
-                        // Optionally reset input value after upload to allow selecting same file again
-                        e.target.value = null;
-                    }
-                }}
-                disabled={disabled}
+              type="file"
+              className="mt-2"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  handleFileUpload(file, question.id);
+                  // Optionally reset input value after upload to allow selecting same file again
+                  e.target.value = null;
+                }
+              }}
+              disabled={disabled}
             />
-             {response.evidence && (
-                <div className="mt-2">
-                    <a href={response.evidence} target="_blank" rel="noreferrer" className="text-decoration-underline">
-                        View uploaded evidence
-                    </a>
-                </div>
+            {response.evidence && (
+              <div className="mt-2">
+                <a href={response.evidence} target="_blank" rel="noreferrer" className="text-decoration-underline">
+                  View uploaded evidence
+                </a>
+              </div>
             )}
           </>
         )}
@@ -452,19 +452,32 @@ const DynamicQuestionnaireForm = () => {
           <Card key={section.sectionId} className="mb-4 shadow-sm">
             <Card.Body>
               <h5 className="text-primary">{section.title}</h5>
-              <p className="text-muted">{section.description}</p>
-
+              {section.description && (
+                <p
+                  className="text-muted"
+                  dangerouslySetInnerHTML={{ __html: section.description }}
+                />
+              )}
               {section.subsections?.map(subsection => (
                 <div key={subsection.subsectionId} className="mb-3 ps-3 border-start">
                   <h6 className="text-secondary">{subsection.title}</h6>
+                  {subsection.description && (
+                    <p
+                      className="text-muted"
+                      dangerouslySetInnerHTML={{ __html: subsection.description }}
+                    />
+                  )}
                   {subsection.questions?.map(q => (
                     shouldShowQuestion(q) && (
                       <Form.Group key={q.id} className="mb-4">
-                        <Form.Label className="fw-semibold fs-6">
-                          {q.questionText} {q.required && <span className="text-danger">*</span>}
+                        <Form.Label className="fw-semibold fs-6 d-inline-flex align-items-center gap-1">
+                          <span dangerouslySetInnerHTML={{ __html: q.questionText }} />
+                          {q.required && <span className="text-danger">*</span>}
                         </Form.Label>
                         {renderInput(q)}
-                        {q.guidance && <Form.Text className="text-muted d-block mt-2">{q.guidance}</Form.Text>}
+                        {q.guidance && (
+                          <div className="text-muted small mt-2" dangerouslySetInnerHTML={{ __html: q.guidance }} />
+                        )}
                       </Form.Group>
                     )
                   ))}

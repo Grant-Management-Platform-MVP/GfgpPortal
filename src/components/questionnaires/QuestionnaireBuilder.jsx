@@ -4,6 +4,8 @@ import { ChevronDown, ChevronUp, Plus, Trash, Eye } from "lucide-react";
 import { Modal, Button } from "react-bootstrap";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 // Fixed options for single choice questions
 const FIXED_OPTIONS = ["Yes", "In-progress", "No", "Not Applicable"];
@@ -477,11 +479,27 @@ const DynamicQuestionnaireBuilder = () => {
                   value={section.title}
                   onChange={(e) => updateSectionField(sectionIndex, "title", e.target.value)}
                 />
-                <textarea
+                {/* <textarea
                   className="form-control mb-2"
                   placeholder="Section Description"
                   value={section.description}
                   onChange={(e) => updateSectionField(sectionIndex, "description", e.target.value)}
+                /> */}
+                <ReactQuill
+                  style={{ minHeight: "110px", marginBottom: "1rem" }}
+                  className="mb-2"
+                  theme="snow"
+                  placeholder="Section Description"
+                  value={section.description}
+                  onChange={(content) => updateSectionField(sectionIndex, "description", content)}
+                  modules={{
+                    toolbar: [
+                      [{ header: [1, 2, false] }],
+                      ['bold', 'italic', 'underline'],
+                      [{ list: 'ordered' }, { list: 'bullet' }],
+                      ['link'],
+                    ],
+                  }}
                 />
 
                 <div className="d-flex gap-3 mb-3">
@@ -509,13 +527,23 @@ const DynamicQuestionnaireBuilder = () => {
                         updateSubsectionField(sectionIndex, subIndex, "title", e.target.value)
                       }
                     />
-                    <textarea
-                      className="form-control mb-2"
+                    <ReactQuill
+                      style={{ minHeight: "110px", marginBottom: "1rem" }}
+                      className="mb-2"
+                      theme="snow"
                       placeholder="Subsection Description"
                       value={sub.description}
-                      onChange={(e) =>
-                        updateSubsectionField(sectionIndex, subIndex, "description", e.target.value)
+                      onChange={(content) =>
+                        updateSubsectionField(sectionIndex, subIndex, "description", content)
                       }
+                      modules={{
+                        toolbar: [
+                          [{ header: [1, 2, false] }],
+                          ['bold', 'italic', 'underline'],
+                          [{ list: 'ordered' }, { list: 'bullet' }],
+                          ['link'],
+                        ],
+                      }}
                     />
 
                     <div className="d-flex justify-content-between align-items-center mb-2">
@@ -535,21 +563,6 @@ const DynamicQuestionnaireBuilder = () => {
                         className="border p-3 rounded bg-light mb-3"
                       >
                         {/* <strong>Question {questionIndex + 1} (Units: {q.weight})</strong> */}
-                        <textarea
-                          className="form-control mb-2"
-                          placeholder="Question Text"
-                          rows={6}
-                          value={q.questionText}
-                          onChange={(e) =>
-                            updateSubsectionQuestionField(
-                              sectionIndex,
-                              subIndex,
-                              questionIndex,
-                              "questionText",
-                              e.target.value
-                            )
-                          }
-                        ></textarea>
                         <input
                           className="form-control mb-2"
                           placeholder="Question Code (e.g., Q1.1)"
@@ -564,20 +577,55 @@ const DynamicQuestionnaireBuilder = () => {
                             )
                           }
                         />
-                        <textarea
-                          className="form-control mb-2"
+                        <hr />
+                        <label className="form-label fw-medium mb-1">Question</label>
+                        <ReactQuill
+                          style={{ minHeight: "140px", marginBottom: "1rem" }}
+                          className="mb-2"
+                          theme="snow"
+                          placeholder="Question"
+                          value={q.questionText}
+                          onChange={(value) =>
+                            updateSubsectionQuestionField(
+                              sectionIndex,
+                              subIndex,
+                              questionIndex,
+                              "questionText",
+                              value
+                            )
+                          }
+                          modules={{
+                            toolbar: [
+                              [{ header: [1, 2, false] }],
+                              ['bold', 'italic', 'underline'],
+                              [{ list: 'ordered' }, { list: 'bullet' }],
+                              ['link'],
+                            ],
+                          }}
+                        />
+                        <label className="form-label fw-medium mb-1">Guidance(Optional)</label>
+                        <ReactQuill
+                          className="mb-2"
+                          theme="snow"
                           placeholder="Guidance (optional)"
-                          rows={4}
                           value={q.guidance}
-                          onChange={(e) =>
+                          onChange={(value) =>
                             updateSubsectionQuestionField(
                               sectionIndex,
                               subIndex,
                               questionIndex,
                               "guidance",
-                              e.target.value
+                              value
                             )
                           }
+                          modules={{
+                            toolbar: [
+                              ['bold', 'italic', 'underline'],
+                              [{ list: 'ordered' }, { list: 'bullet' }],
+                              ['link'],
+                            ],
+                          }}
+                          formats={['bold', 'italic', 'underline', 'list', 'bullet', 'link']}
                         />
                         <div className="form-check mb-2">
                           <input
