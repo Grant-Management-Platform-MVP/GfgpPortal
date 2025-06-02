@@ -8,16 +8,19 @@ const StartQuestionnaire = () => {
   const location = useLocation();
   const structure = getGfgpStructure();
 
-  useEffect(() => {
-    if (!structure) {
-      navigate('/grantee/select-structure');
-    }
-  }, [structure, navigate]);
-
-  if (!structure) return null;
-
   const queryParams = new URLSearchParams(location.search);
   const mode = queryParams.get('mode');
+
+  useEffect(() => {
+    if (!structure) {
+      console.log("No structure found, redirecting...");
+      navigate('/grantee/select-structure');
+    }
+  }, [structure, navigate, mode]);
+
+  if (!structure) {
+    return null;
+  }
 
   return (
     <div className="container mt-4">
