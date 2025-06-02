@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Table, Button, Spinner, Alert, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import AssessmentInvitesTable from '@components/AssessmentInvitesTable';
+
 
 const statusVariantMap = {
     SAVED: 'secondary',
@@ -24,6 +26,31 @@ const AssessmentListPage = () => {
     const BASE_URL = import.meta.env.VITE_BASE_URL;
     const user = JSON.parse(localStorage.getItem("user"));
     const userId = user?.userId;
+    const [invitesData, setInvitesData] = useState([]);
+
+
+    const handleStartAssessment = (invite) => {
+        navigate(`/grantee/assessment-invite/${invite.id}`, {
+            state: { invite },
+        });
+    };
+
+
+    useEffect(() => {
+        const fetchInvites = async () => {
+            try {
+                const response = await fetch(`${BASE_URL}gfgp/assessment-invites/${userId}`);
+                const result = await response.json();
+                setInvitesData(result);
+            } catch (error) {
+                console.error('Error fetching invites:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchInvites();
+    }, []);
 
     useEffect(() => {
         const fetchAssessments = async () => {
@@ -104,7 +131,7 @@ const AssessmentListPage = () => {
                         {assessments.map((a, idx) => {
                             const buttonVariant = a.status === 'SENT_BACK' ? 'warning'
                                 : a.status === 'SAVED' ? 'primary'
-                                : 'outline-primary';
+                                    : 'outline-primary';
 
                             return (
                                 <tr
@@ -147,6 +174,15 @@ const AssessmentListPage = () => {
                         })}
                     </tbody>
                 </Table>
+            )}
+            {/* Invite table */}
+            {loading ? (
+                <p>Loading invitations...</p>
+            ) : (
+                <AssessmentInvitesTable
+                    data={invitesData}
+                    onStartAssessment={handleStartAssessment}
+                />
             )}
         </div>
     );
