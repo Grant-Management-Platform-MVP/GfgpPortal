@@ -49,6 +49,7 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure, id
   console.log('granteeId', currentUserId);
   const currentStructure = propStructure || localStorage.getItem("gfgpStructure");
   // const currentAssessmentId = propAssessmentId;
+  const isGrantor = user?.role === 'GRANTOR'; // case-sensitive match
 
   useEffect(() => {
     const fetchData = async () => {
@@ -358,7 +359,7 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure, id
                         <th>Status</th>
                         <th>Evidence</th>
                         <th>Justification (if N/A)</th>
-                        <th>Funder Feedback</th>
+                        {isGrantor && <th>Funder Feedback</th>}
                       </tr>
                     </thead>
                     <tbody>
@@ -395,7 +396,7 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure, id
                               )}
                             </td>
                             <td>{response.justification || "—"}</td>
-                            <td style={{ width: '25%' }}>
+                            {isGrantor && <td style={{ width: '25%' }}>
                               <Form.Control
                                 as="textarea"
                                 rows={3}
@@ -404,7 +405,7 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure, id
                                 onChange={(e) => handleFunderCommentChange(q.id, e.target.value)}
                                 disabled={isSubmittingFeedback || isAlreadyReturned}
                               />
-                            </td>
+                            </td>}
                           </tr>
                         );
                       })}
@@ -437,24 +438,25 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure, id
         );
       })}
       <div className="text-end d-grid gap-2 mt-4">
-        <Button
-          variant="success"
-          size="lg"
-          onClick={handleReturnForFixes}
-          // Disable if already returning, or if the assessment is already in the 'RETURNED_FOR_FIXES' state
-          disabled={isSubmittingFeedback || isAlreadyReturned}
-        >
-          {isSubmittingFeedback ? (
-            <>
-              <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
-              Returning...
-            </>
-          ) : isAlreadyReturned ? (
-            "Assessment Already Returned"
-          ) : (
-            "Return Assessement to Grantee for Fixes"
-          )}
-        </Button>
+        {isGrantor && (
+          <Button
+            variant="success"
+            size="lg"
+            onClick={handleReturnForFixes}
+            // Disable if already returning, or if the assessment is already in the 'RETURNED_FOR_FIXES' state
+            disabled={isSubmittingFeedback || isAlreadyReturned}
+          >
+            {isSubmittingFeedback ? (
+              <>
+                <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
+                Returning...
+              </>
+            ) : isAlreadyReturned ? (
+              "Assessment Already Returned"
+            ) : (
+              "Return Assessement to Grantee for Fixes"
+            )}
+          </Button>)}
       </div>
       {/* STACKED BAR CHART */}
       <Card className="mt-5 shadow-sm">
