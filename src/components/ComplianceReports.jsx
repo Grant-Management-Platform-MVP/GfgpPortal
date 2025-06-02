@@ -19,6 +19,8 @@ import {
 } from "recharts";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 const STATUS_MAP = {
   Yes: { label: "Met", variant: "success", color: "#198754", points: 2 },
@@ -396,14 +398,23 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure, id
                               )}
                             </td>
                             <td>{response.justification || "—"}</td>
-                            {isGrantor && <td style={{ width: '25%' }}>
-                              <Form.Control
-                                as="textarea"
-                                rows={3}
+                            {isGrantor && <td>
+                              <ReactQuill
+                                style={{ minHeight: "110px", marginBottom: "1rem" }}
+                                className="mb-2"
+                                theme="snow"
                                 placeholder="Add feedback here..."
                                 value={funderComments[q.id] || ''}
-                                onChange={(e) => handleFunderCommentChange(q.id, e.target.value)}
+                                onChange={(content) => handleFunderCommentChange(q.id, content)}
                                 disabled={isSubmittingFeedback || isAlreadyReturned}
+                                modules={{
+                                  toolbar: [
+                                    [{ header: [1, 2, false] }],
+                                    ['bold', 'italic', 'underline'],
+                                    [{ list: 'ordered' }, { list: 'bullet' }],
+                                    ['link'],
+                                  ],
+                                }}
                               />
                             </td>}
                           </tr>
