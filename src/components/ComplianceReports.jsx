@@ -48,11 +48,11 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure, id
   const currentUserId = propUserId || user?.userId;
   console.log('granteeId', currentUserId);
   const currentStructure = propStructure || localStorage.getItem("gfgpStructure");
-  const currentAssessmentId = propAssessmentId;
+  // const currentAssessmentId = propAssessmentId;
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!user?.userId || !currentStructure || !currentAssessmentId) {
+      if (!user?.userId) {
         setError("Missing user, GFGP structure or assessment. Please ensure you are logged in and have selected a questionnaire.");
         setLoading(false);
         return;
@@ -60,27 +60,38 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure, id
 
       try {
         const [templateRes, responseRes] = await Promise.all([
-          axios.get(`${BASE_URL}gfgp/questionnaire-templates-report/user/${currentUserId}`), //fetch_template
-          axios.get(`${BASE_URL}gfgp/assessment-submissions-report/user/${currentUserId}`), //fetch_submission
+          axios.get(`${BASE_URL}gfgp/questionnaire-templates-report/user/${currentUserId}`), // fetch_template
+          axios.get(`${BASE_URL}gfgp/assessment-submissions-report/user/${currentUserId}`), // fetch_submission
         ]);
 
+        // Check if template data exists
+        if (!Array.isArray(templateRes.data) || templateRes.data.length === 0) {
+          setError("No submitted assessment found for this user.");
+          return;
+        }
+
         const [templateObj] = templateRes.data;
+
+        if (!templateObj?.content) {
+          setError("The questionnaire template is missing content.");
+          return;
+        }
+
         const parsedTemplate =
           typeof templateObj.content === "string"
             ? JSON.parse(templateObj.content)
             : templateObj.content;
 
-        let flattenedAnswers = {}; // This will hold our flat answers
+        let flattenedAnswers = {};
         try {
           const raw = responseRes.data.answers;
           const submittedAnswers = typeof raw === "string" ? JSON.parse(raw) : raw || {};
 
-          // Flatten the nested submitted answers structure into a flat object keyed by questionId
           if (submittedAnswers) {
             Object.values(submittedAnswers).forEach(section => {
-              if (section && section.subsections) { // Ensure section is not null/undefined
+              if (section?.subsections) {
                 Object.values(section.subsections).forEach(subsection => {
-                  if (subsection && subsection.questions) { // Ensure subsection is not null/undefined
+                  if (subsection?.questions) {
                     Object.entries(subsection.questions).forEach(([questionId, answerData]) => {
                       flattenedAnswers[questionId] = answerData;
                     });
@@ -96,9 +107,8 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure, id
         }
 
         setTemplate(parsedTemplate);
-        setResponses(flattenedAnswers); // Set the flattened answers to state
+        setResponses(flattenedAnswers);
 
-        // Initialize funderComments state from existing feedback in the loaded submission
         const initialFunderComments = {};
         Object.keys(flattenedAnswers).forEach(qId => {
           if (flattenedAnswers[qId].funderFeedback) {
@@ -107,9 +117,7 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure, id
         });
         setFunderComments(initialFunderComments);
 
-
         const recMap = {};
-        // Fetch recommendations for each section
         await Promise.all(
           (parsedTemplate.sections || []).map(async (section) => {
             try {
@@ -123,8 +131,6 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure, id
         );
 
         setRecommendations(recMap);
-
-        // Fetch overall completeness and compliance from the submission report
         setCompleteness(responseRes.data.completeness ?? null);
         setCompliance(responseRes.data.compliance ?? null);
         setQuestionnaire(responseRes.data || {});
@@ -135,6 +141,7 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure, id
       } finally {
         setLoading(false);
       }
+
 
       // Audit logs (only if not a prop-driven view, e.g., for self-assessment)
       if (!propUserId) {
@@ -306,6 +313,11 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure, id
   return (
     <div className="mt-4">
       <h4>Sectionwise Compliance Report</h4>
+      {error && (
+        <div className="alert alert-danger" role="alert">
+          {error}
+        </div>
+      )}
       <p>
         <strong>Grantee:</strong> {questionnaire?.granteeName} <br />
         <strong>Current Status:</strong> {questionnaire?.status} <br />
