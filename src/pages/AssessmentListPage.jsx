@@ -41,7 +41,7 @@ const AssessmentListPage = () => {
     }, [userId]);
 
     const handleNavigate = (id, status) => {
-        let url = `/grantee/questionnaire`;
+        let url = '/grantee/questionnaire';
 
         if (status === 'SENT_BACK') url += '?mode=fix';
         else if (status === 'SUBMITTED') url += '?mode=view';

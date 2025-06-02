@@ -21,8 +21,8 @@ const GranteeDashboard = () => {
           <Route path="compliance-reports" element={<ComplianceReports />} />
           <Route path="profile" element={<Profile />} />
           <Route path="documents" element={<DocumentRepository/>} />
-          <Route path="/grantee/questionnaire" element={<StartQuestionnaire/>} />
-          {/* <Route path="/resume-assessment/:assessmentId" element={<ResumeAssessmentPage />} /> */}
+          <Route path="questionnaire" element={<StartQuestionnaire/>} />
+          <Route path="*" element={<div>404 - Route Not Found</div>} />
         </Routes>
       </div>
     </DashboardLayout>
