@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import {
   Spinner,
@@ -6,7 +6,7 @@ import {
   Table,
   Alert,
   OverlayTrigger,
-  Tooltip, Modal, Button, Form
+  Tooltip, Button, Form
 } from "react-bootstrap";
 import {
   BarChart,
@@ -28,7 +28,7 @@ const STATUS_MAP = {
   "No Response": { label: "No Response", variant: "light", color: "#f8f9fa", points: 0 }, // Using a very light gray for No Response
 };
 
-const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) => {
+const ComplianceReports = ({ granteeId: propUserId, structure: propStructure, id: propAssessmentId }) => {
   const [loading, setLoading] = useState(true);
   const [template, setTemplate] = useState(null);
   const [responses, setResponses] = useState({});
@@ -36,96 +36,32 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) 
   const [completeness, setCompleteness] = useState(null);
   const [compliance, setCompliance] = useState(null);
   const [recommendations, setRecommendations] = useState({});
+  const [funderComments, setFunderComments] = useState({});
+  const [questionnaire, setQuestionnaire] = useState({});
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  const navigate = useNavigate();
+  // const [currentSubmission, setCurrentSubmission] = useState(null);
+
 
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const user = JSON.parse(localStorage.getItem("user"));
   const currentUserId = propUserId || user?.userId;
   console.log('granteeId', currentUserId);
   const currentStructure = propStructure || localStorage.getItem("gfgpStructure");
-  const [showSendBackModal, setShowSendBackModal] = useState(false);
-  const [sendBackReason, setSendBackReason] = useState("");
-  const [hasMissingData, setHasMissingData] = useState(false);
-  const [questionnaire, setQuestionnaire] = useState({});
-  const [isSendingBack, setIsSendingBack] = useState(false);
-  const navigate = useNavigate();
-
-
-  // Check for missing fields (status, justification, evidence) for each answered question
-  const hasUnansweredQuestions = useCallback(() => {
-    if (!responses || Object.keys(responses).length === 0) return false;
-
-    return Object.values(responses).some((answer) => {
-      // answer is expected to be an object like { answer: "Yes", status, evidence, justification }
-      const hasAnswer = !!answer?.answer;
-      const isStatusEmpty = !answer?.status;
-      const isEvidenceEmpty = !answer?.evidence;
-      const isJustificationEmpty = !answer?.justification;
-
-      return hasAnswer && (isStatusEmpty || isEvidenceEmpty || isJustificationEmpty);
-    });
-  }, [responses]);
-
-  useEffect(() => {
-    if (!loading) {
-      const missing = hasUnansweredQuestions();
-      setHasMissingData(missing);
-    }
-  }, [loading, hasUnansweredQuestions]);
-
-
-  // Handler to open modal
-  const openSendBackModal = () => setShowSendBackModal(true);
-  // Handler to close modal
-  const closeSendBackModal = () => {
-    setSendBackReason(""); // clear reason on close
-    setShowSendBackModal(false);
-  };
-
-  // Mock submit handler (replace with real API call)
-  const handleSendBackSubmit = async (reason) => {
-    if (!reason.trim()) {
-      toast.warn("Please provide a reason before sending back.");
-      return;
-    }
-
-    setIsSendingBack(true);
-
-    try {
-      const payload = {
-        userId: currentUserId, //sent_by
-        reason,
-        structure: currentStructure,
-        assessmentId: questionnaire?.id,
-      };
-
-      const response = await axios.post(`${BASE_URL}gfgp/assessment-submissions/send-back`, payload);
-
-      console.log("Send back response:", response.data);
-      closeSendBackModal();
-      toast.success("Assessment Report sent back successfully!");
-      setTimeout(() => {
-        navigate("/grantor/");
-      }, 1500);
-    } catch (e) {
-      console.error("Send back failed:", e);
-      toast.error("Failed to send back. Please try again later.");
-    } finally {
-      setIsSendingBack(false);
-    }
-  };
+  const currentAssessmentId = propAssessmentId;
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!user?.userId || !currentStructure) {
-        setError("Missing user or questionnaire structure. Please ensure you are logged in and have selected a questionnaire.");
+      if (!user?.userId || !currentStructure || !currentAssessmentId) {
+        setError("Missing user, GFGP structure or assessment. Please ensure you are logged in and have selected a questionnaire.");
         setLoading(false);
         return;
       }
 
       try {
         const [templateRes, responseRes] = await Promise.all([
-          axios.get(`${BASE_URL}gfgp/questionnaire-templates-report/user/${currentUserId}`),
-          axios.get(`${BASE_URL}gfgp/assessment-submissions-report/user/${currentUserId}`),
+          axios.get(`${BASE_URL}gfgp/questionnaire-templates-report/user/${currentUserId}`), //fetch_template
+          axios.get(`${BASE_URL}gfgp/assessment-submissions-report/user/${currentUserId}`), //fetch_submission
         ]);
 
         const [templateObj] = templateRes.data;
@@ -161,8 +97,18 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) 
 
         setTemplate(parsedTemplate);
         setResponses(flattenedAnswers); // Set the flattened answers to state
-        const recMap = {};
 
+        // Initialize funderComments state from existing feedback in the loaded submission
+        const initialFunderComments = {};
+        Object.keys(flattenedAnswers).forEach(qId => {
+          if (flattenedAnswers[qId].funderFeedback) {
+            initialFunderComments[qId] = flattenedAnswers[qId].funderFeedback;
+          }
+        });
+        setFunderComments(initialFunderComments);
+
+
+        const recMap = {};
         // Fetch recommendations for each section
         await Promise.all(
           (parsedTemplate.sections || []).map(async (section) => {
@@ -208,6 +154,77 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) 
     fetchData();
     // Add currentUserId and currentStructure to dependency array
   }, [BASE_URL, currentUserId, currentStructure, propUserId, user?.userId]);
+
+
+  // Handles changes in funder feedback textareas
+  const handleFunderCommentChange = (questionId, value) => {
+    setFunderComments(prev => ({
+      ...prev,
+      [questionId]: value
+    }));
+  };
+
+  // Handles the "Return to Grantee for Fixes" action
+  const handleReturnForFixes = async () => {
+    setIsSubmittingFeedback(true);
+    setError(""); // Clear previous errors
+
+    try {
+      if (!questionnaire || !questionnaire.id) {
+        throw new Error("Assessment submission ID is missing. Cannot return for fixes.");
+      }
+
+      // 1. Reconstruct the full nested answers object with funder feedback
+      const updatedAnswersForBackend = { sections: {} };
+
+      template.sections.forEach(section => {
+        updatedAnswersForBackend.sections[section.sectionId] = {
+          // Re-include basic section/subsection info if backend requires it
+          sectionId: section.sectionId,
+          title: section.title,
+          subsections: {}
+        };
+        section.subsections.forEach(subsection => {
+          updatedAnswersForBackend.sections[section.sectionId].subsections[subsection.subsectionId] = {
+            subsectionId: subsection.subsectionId,
+            title: subsection.title,
+            questions: {}
+          };
+          subsection.questions.forEach(question => {
+            const qId = question.id;
+            const granteeResponse = responses[qId] || {}; // Grantee's original answer data
+            const funderComment = funderComments[qId] || ''; // Funder's typed comment
+
+            updatedAnswersForBackend.sections[section.sectionId].subsections[subsection.subsectionId].questions[qId] = {
+              id: qId,
+              answer: granteeResponse.answer,
+              evidence: granteeResponse.evidence,
+              justification: granteeResponse.justification,
+              // Add funderFeedback only if it's not empty, otherwise omit (or set to null)
+              ...(funderComment.trim() !== '' && { funderFeedback: funderComment.trim() })
+            };
+          });
+        });
+      });
+
+      await axios.put(`${BASE_URL}gfgp/assessment-submissions/${questionnaire.id}/return-for-fixes`, {
+        funderId: user?.userId, // The ID of the funder performing the action
+        updatedAnswers: updatedAnswersForBackend, // Send the full, updated answers object
+      });
+
+      toast.success("Assessment returned to grantee for fixes!");
+      setTimeout(() => {
+        navigate("/grantor/shared-reports");
+      }, 1500);
+    } catch (err) {
+      console.error("Error returning assessment:", err);
+      setError(`Failed to return assessment: ${err.response?.data?.message || err.message}`);
+      toast.error(`Failed to return assessment: ${err.response?.data?.message || err.message}`);
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
+  };
+
 
   // Helper function to get scores for a section
   const getSectionScores = (section) => {
@@ -283,24 +300,15 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) 
     return <Alert variant="danger">{error}</Alert>;
   }
 
+  // Determine if the assessment is already in 'RETURNED_FOR_FIXES' status
+  const isAlreadyReturned = questionnaire?.status === 'RETURNED_FOR_FIXES';
+
   return (
     <div className="mt-4">
       <h4>Sectionwise Compliance Report</h4>
-      <div className="flex flex-col items-end gap-2 mt-6">
-        {user.role === 'GRANTOR' &&
-          questionnaire?.status === 'SUBMITTED' &&
-          hasMissingData && (
-            <>
-              <span className="text-sm text-red-600 font-medium">
-                Assessment appears incomplete
-              </span>
-              <Button variant="warning lg" onClick={openSendBackModal}>
-                Send Back Assessment to Grantee
-              </Button>
-            </>
-          )}
-      </div>
       <p>
+        <strong>Grantee:</strong> {questionnaire?.granteeName} <br />
+        <strong>Current Status:</strong> {questionnaire?.status} <br />
         <strong>Structure:</strong> {currentStructure}
       </p>
 
@@ -321,7 +329,7 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) 
               <h5>
                 {index + 1}. {section.title}
               </h5>
-              <p>{section.description}</p>
+              <p className="text-muted" dangerouslySetInnerHTML={{ __html: section.description }} />
               <Alert variant="secondary">
                 <strong>Section Completeness:</strong> {sectionScore.completeness}% | {" "}
                 <strong>Compliance:</strong> {sectionScore.compliance}%
@@ -330,7 +338,7 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) 
               {/* Iterate through subsections */}
               {(section.subsections || []).map((subsection) => (
                 <div key={subsection.subsectionId} className="mb-3 ps-3 border-start">
-                  <h6 className="text-secondary mt-3">{subsection.title}</h6>
+                  <h6 className="text-muted" dangerouslySetInnerHTML={{ __html: subsection.title }} />
                   <Table bordered hover size="sm"> {/* Added size="sm" for compact table */}
                     <thead className="table-light">
                       <tr>
@@ -338,6 +346,7 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) 
                         <th>Status</th>
                         <th>Evidence</th>
                         <th>Justification (if N/A)</th>
+                        <th>Funder Feedback</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -350,7 +359,7 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) 
 
                         return (
                           <tr key={q.id}>
-                            <td>{q.questionText}</td>
+                            <td><p className="text-muted" dangerouslySetInnerHTML={{ __html: q.questionText }} /></td>
                             <td>
                               <OverlayTrigger
                                 placement="top"
@@ -374,6 +383,16 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) 
                               )}
                             </td>
                             <td>{response.justification || "—"}</td>
+                            <td style={{ width: '25%' }}>
+                              <Form.Control
+                                as="textarea"
+                                rows={3}
+                                placeholder="Add feedback here..."
+                                value={funderComments[q.id] || ''}
+                                onChange={(e) => handleFunderCommentChange(q.id, e.target.value)}
+                                disabled={isSubmittingFeedback || isAlreadyReturned}
+                              />
+                            </td>
                           </tr>
                         );
                       })}
@@ -405,7 +424,26 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) 
           </Card>
         );
       })}
-
+      <div className="text-end d-grid gap-2 mt-4">
+        <Button
+          variant="success"
+          size="lg"
+          onClick={handleReturnForFixes}
+          // Disable if already returning, or if the assessment is already in the 'RETURNED_FOR_FIXES' state
+          disabled={isSubmittingFeedback || isAlreadyReturned}
+        >
+          {isSubmittingFeedback ? (
+            <>
+              <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
+              Returning...
+            </>
+          ) : isAlreadyReturned ? (
+            "Assessment Already Returned"
+          ) : (
+            "Return Assessement to Grantee for Fixes"
+          )}
+        </Button>
+      </div>
       {/* STACKED BAR CHART */}
       <Card className="mt-5 shadow-sm">
         <Card.Body>
@@ -430,38 +468,6 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure }) 
           </ResponsiveContainer>
         </Card.Body>
       </Card>
-      {/* Modal */}
-      <Modal show={showSendBackModal} onHide={closeSendBackModal} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Send Back Reason</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form.Group controlId="sendBackReason">
-            <Form.Label>Please provide a reason</Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={3}
-              value={sendBackReason}
-              onChange={(e) => setSendBackReason(e.target.value)}
-              placeholder="Enter reason here..."
-            />
-          </Form.Group>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={closeSendBackModal}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={() => handleSendBackSubmit(sendBackReason)} disabled={isSendingBack}>
-            {isSendingBack ? (
-              <span className="flex items-center gap-2">
-                <Spinner size="sm" /> Sending...
-              </span>
-            ) : (
-              "Send Back Assessment"
-            )}
-          </Button>
-        </Modal.Footer>
-      </Modal>
     </div>
   );
 };

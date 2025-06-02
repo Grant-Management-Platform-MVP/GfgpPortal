@@ -4,7 +4,6 @@ import { Button, Card, Spinner, Alert, Modal } from 'react-bootstrap';
 import { BiInfoCircle, BiUser, BiPlayCircle, BiEditAlt, BiSync } from 'react-icons/bi';
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Bold } from 'lucide-react';
 
 
 const ConsentRequestsCard = () => {
@@ -22,8 +21,8 @@ const ConsentRequestsCard = () => {
   const [questionnaireTemplate, setQuestionnaireTemplate] = useState(null);
   const [hydratedTemplate, setHydratedTemplate] = useState(null);
   const parsedTemplate = questionnaireTemplate?.content
-    ? JSON.parse(questionnaireTemplate.content)
-    : null;
+  ? JSON.parse(questionnaireTemplate.content)
+  : null;
   const [assessmentInvites, setAssessmentInvites] = useState([]);
   const user = JSON.parse(localStorage.getItem("user"));
   const userId = user?.userId;
@@ -49,20 +48,6 @@ const ConsentRequestsCard = () => {
       setHydratedTemplate(templateWithAnswers);
     }
   }, [parsedTemplate, selectedAssessment]);
-
-  const getFriendlyStatus = (status) => {
-    switch (status) {
-      case "SENT_BACK":
-        return "Returned for Edits";
-      case "SUBMITTED":
-        return "Submitted";
-      case "SAVED":
-        return "Draft Saved";
-      default:
-        return status; // fallback if unknown
-    }
-  };
-
 
   const handleViewAssessment = async (assessment) => {
     setSelectedAssessment(assessment);
@@ -98,7 +83,7 @@ const ConsentRequestsCard = () => {
         const { data: assessments } = await axios.get(`${BASE_URL}gfgp/assessment/${userId}`);
         setPreviousAssessments(assessments);
 
-        if (assessments.length > 0) setStructure(assessments[0].structure);
+      if (assessments.length > 0) setStructure(assessments[0].structure);
 
         // Smooth cascading UI load
         setTimeout(() => setShowPending(true), 300);
@@ -157,33 +142,21 @@ const ConsentRequestsCard = () => {
     const distinct = [];
 
     Object.values(grouped).forEach((group) => {
-      // Priority 1: If SENT_BACK exists, take the latest one
-      const sentBack = group
-        .filter((a) => a.status === "SENT_BACK")
-        .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))[0];
-
-      if (sentBack) {
-        distinct.push(sentBack);
-        return;
-      }
-
-      // Priority 2: If SUBMITTED exists, take the latest one
-      const submitted = group
-        .filter((a) => a.status === "SUBMITTED")
-        .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))[0];
+      const submitted = group.find((a) => a.status === "SUBMITTED");
 
       if (submitted) {
         distinct.push(submitted);
-        return;
-      }
+      } else {
+        // Get the latest draft by comparing `lastUpdated` or fallback to `createdAt`
+        const latestDraft = group
+          .filter((a) => a.status === "SAVED")
+          .sort((a, b) =>
+            new Date(b.lastUpdated || b.createdAt) - new Date(a.lastUpdated || a.createdAt)
+          )[0];
 
-      // Priority 3: Latest saved draft
-      const latestDraft = group
-        .filter((a) => a.status === "SAVED")
-        .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))[0];
-
-      if (latestDraft) {
-        distinct.push(latestDraft);
+        if (latestDraft) {
+          distinct.push(latestDraft);
+        }
       }
     });
 
@@ -261,121 +234,66 @@ const ConsentRequestsCard = () => {
               )}
             </div>
 
-            {/* 🔴 Returned Assessments */}
-            <div className="mb-4">
-              <h6 className="text-danger mb-3">Returned Assessments</h6>
-              {filteredAssessments.filter(a => a.status === "SENT_BACK").length === 0 ? (
-                <div className="text-muted small ps-2">No returned assessments found.</div>
-              ) : (
-                filteredAssessments
-                  .filter(a => a.status === "SENT_BACK")
-                  .map((assessment, idx) => (
-                    <div
-                      key={assessment.id || `returned-${idx}`}
-                      className="border border-danger rounded p-3 mb-3 bg-light"
-                    >
-                      <div className="mb-2">
-                        <strong>Structure:</strong> {assessment.structure}
-                      </div>
-                      <div className="mb-2">
-                        <strong>Status:</strong>{" "}
-                        <span
-                          className={
-                            assessment.status === "SENT_BACK"
-                              ? "text-success fw-semibold" : ""
-                          }
-                        >
-                          {getFriendlyStatus(assessment.status)}
-                        </span>
-
-                      </div>
-                      {assessment.returnReason && (
-                        <div className="mb-2 text-muted fst-italic">
-                          <BiErrorCircle className="me-1 text-warning" />
-                          {assessment.returnReason}
-                        </div>
-                      )}
-                      <Button
-                        size="lg"
-                        variant="warning"
-                        onClick={() => navigate(`/grantee/questionnaire/?mode=fix`)}
-                      >
-                        <BiEditAlt className="me-1" /> Resume Fixing
-                      </Button>
-                    </div>
-                  ))
-              )}
-            </div>
-
-            {/* 🟢 Other Assessments */}
-            <div>
-              <h6 className="text-secondary mb-3">All Other Assessments</h6>
-              {filteredAssessments.filter(a => a.status !== "SENT_BACK").length === 0 ? (
-                <div className="text-center text-muted py-4">
-                  <BiInfoCircle size={40} className="mb-2" />
-                  <p>No previous assessments available.</p>
-                </div>
-              ) : (
-                filteredAssessments
-                  .filter(a => a.status !== "SENT_BACK")
-                  .map((assessment, idx) => (
-                    <div
-                      key={assessment.id || idx}
-                      className="d-flex justify-content-between align-items-start border rounded p-3 mb-3 flex-column flex-md-row"
-                    >
-                      <div className="flex-grow-1">
-                        <div><strong>Structure:</strong> {assessment.structureType}</div>
-                        <div><strong>Status:</strong> {assessment.status}</div>
-                        <div className="text-muted small">
-                          Submitted on: {new Date(assessment.updatedAt || assessment.createdAt).toLocaleString()}
-                        </div>
-                      </div>
-                      <div className="mt-3 mt-md-0 ms-md-3 d-flex gap-2">
-                        {/* Show Resume button only for SAVED, hide otherwise */}
-                        {assessment.status === "SAVED" && (
-                          <Button
-                            size="sm"
-                            variant="primary"
-                            onClick={() => navigate(`/resume-assessment/${assessment.id}`)}
-                          >
-                            <BiPlayCircle className="me-1" /> Resume
-                          </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="outline-info"
-                          onClick={() => handleViewAssessment(assessment)}
-                        >
-                          <BiEditAlt className="me-1" /> View
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-              )}
-            </div>
-          </Card.Body>
-          <Card.Body>
-            <h5 className="mb-4">Assessment Invitations from Funders</h5>
-            {assessmentInvites.length === 0 ? (
+            {filteredAssessments.length === 0 ? (
               <div className="text-center text-muted py-4">
                 <BiInfoCircle size={40} className="mb-2" />
-                <p>No invitations received at the moment.</p>
+                <p>No previous assessments available.</p>
               </div>
             ) : (
-              assessmentInvites.map((invite) => (
-                <div key={invite.id} className="d-flex justify-content-between align-items-start border rounded p-3 mb-3 flex-column flex-md-row">
+              filteredAssessments.map((assessment, idx) => (
+                <div
+                  key={assessment.id || idx}
+                  className="d-flex justify-content-between align-items-start border rounded p-3 mb-3 flex-column flex-md-row"
+                >
                   <div className="flex-grow-1">
-                    <div><strong>Invited By (Grantor):</strong> {invite.invitedBy || `Grantor #${invite.grantorId}`}</div>
-                    <div><strong>Grantee Name:</strong> {invite.granteeName}</div>
-                    <div><strong>Structure:</strong> {invite.structureType}</div>
+                    <div><strong>GFGP Structure:</strong> {assessment.structure}</div>
+                    <div><strong>Status:</strong> {assessment.status}</div>
                     <div className="text-muted small">
-                      Date Invited: {new Date(invite.dateInvited).toLocaleString()}
+                      Submitted on: {new Date(assessment.updatedAt || assessment.createdAt).toLocaleString()}
                     </div>
+                  </div>
+                  <div className="mt-3 mt-md-0 ms-md-3 d-flex gap-2">
+                    {assessment.status === "SAVED" && (
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={() => navigate(`/resume-assessment/${assessment.id}`)}
+                        style={{ display:'none' }}
+                      >
+                        <BiPlayCircle className="me-1" /> Resume
+                      </Button>
+                    )}
+                    <Button size="sm" variant="outline-info" onClick={() => handleViewAssessment(assessment)} style={{ display:'none' }}>
+                      <BiEditAlt className="me-1" /> View
+                    </Button>
                   </div>
                 </div>
               ))
             )}
           </Card.Body>
+
+            <Card.Body>
+              <h5 className="mb-4">Assessment Invitations from Funders</h5>
+              {assessmentInvites.length === 0 ? (
+                <div className="text-center text-muted py-4">
+                  <BiInfoCircle size={40} className="mb-2" />
+                  <p>No invitations received at the moment.</p>
+                </div>
+              ) : (
+                assessmentInvites.map((invite) => (
+                  <div key={invite.id} className="d-flex justify-content-between align-items-start border rounded p-3 mb-3 flex-column flex-md-row">
+                    <div className="flex-grow-1">
+                      <div><strong>Invited By (Grantor):</strong> {invite.invitedBy || `Grantor #${invite.grantorId}`}</div>
+                      <div><strong>Grantee Name:</strong> {invite.granteeName}</div>
+                      <div><strong>Structure:</strong> {invite.structureType}</div>
+                      <div className="text-muted small">
+                        Date Invited: {new Date(invite.dateInvited).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </Card.Body>
           <Modal show={viewModalVisible} onHide={() => setViewModalVisible(false)} size="xl">
             <Modal.Header closeButton>
               <Modal.Title>Assessment Details</Modal.Title>

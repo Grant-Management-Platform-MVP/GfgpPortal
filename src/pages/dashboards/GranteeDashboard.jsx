@@ -7,7 +7,7 @@ import Profile from '@common/ProfilePage';
 import SelectStructure from '@components/grantee/SelectStructure';
 import ConsentRequestsCard from '@components/ConsentRequestsCard';
 import DocumentRepository from '@components/DocumentRepository';
-// import ResumeAssessmentPage from '@components/ResumeAssessmentPage';
+import AssessmentListPage from '@pages/AssessmentListPage';
 
 const GranteeDashboard = () => {
   return (
@@ -17,10 +17,11 @@ const GranteeDashboard = () => {
         <Routes>
           <Route index element={<ConsentRequestsCard />} />
           <Route path="select-structure" element={<SelectStructure />} />
-          <Route path="questionnaire" element={<StartQuestionnaire />} />
+          <Route path="assessments" element={<AssessmentListPage />} />
           <Route path="compliance-reports" element={<ComplianceReports />} />
           <Route path="profile" element={<Profile />} />
           <Route path="documents" element={<DocumentRepository/>} />
+          <Route path="/grantee/questionnaire" element={<StartQuestionnaire/>} />
           {/* <Route path="/resume-assessment/:assessmentId" element={<ResumeAssessmentPage />} /> */}
         </Routes>
       </div>
