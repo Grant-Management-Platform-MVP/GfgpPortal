@@ -18,7 +18,7 @@ const SectionComparisonTable = ({ template, grantees, granteeAnswers }) => {
         <Card className="mb-4 shadow-sm" key={section.sectionId || sectionIdx}>
           <Card.Body>
             <h5>{section.title || `Section ${sectionIdx + 1}`}</h5>
-            <p className="text-muted">{section.description}</p>
+            <p className="text-muted" dangerouslySetInnerHTML={{ __html: section.description }} />
 
             <Table bordered hover responsive>
               <thead className="table-light">
@@ -37,7 +37,7 @@ const SectionComparisonTable = ({ template, grantees, granteeAnswers }) => {
                   .flatMap(subsection => subsection.questions || [])
                   .map((q) => (
                     <tr key={q.id}>
-                      <td>{q.questionText}</td>
+                      <td dangerouslySetInnerHTML={{ __html: q.questionText }}/>
                       {grantees.map((g) => {
                         const response = granteeAnswers[g.id]?.[q.id];
                         // Use STATUS_MAP for consistent labels, default to 'No Response' (or '—')
