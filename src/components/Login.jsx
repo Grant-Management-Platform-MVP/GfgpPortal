@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 function LoginForm() {
   const [email, setUsername] = useState('');
@@ -143,6 +143,9 @@ function LoginForm() {
       >
         {loading ? 'Logging in...' : 'Login'}
       </button>
+      <div className='container mt-4'>
+        <p><Link to="/forgot-password">Forgot Password?</Link></p>
+      </div>
     </form>
   );
 }
