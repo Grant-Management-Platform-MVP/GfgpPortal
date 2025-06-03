@@ -133,9 +133,9 @@ const getSidebarLinks = (role, hasSelectedStructure) => {
         { path: '/admin/users', label: 'User Management', icon: 'bi-people' },
         { path: '/admin/questionnaire-creation', label: 'Create Questionnaire', icon: 'bi-plus-square' },
         { path: '/admin/questionnaire-management', label: 'Manage Questionnaires', icon: 'bi-layout-text-window' },
-        { path: '/admin/settings', label: 'System Settings', icon: 'bi-gear' },
-        { path: '/admin/reports', label: 'Reports & Exports', icon: 'bi-bar-chart' },
-        { path: '/admin/translations', label: 'Translations', icon: 'bi-translate' },
+        // { path: '/admin/settings', label: 'System Settings', icon: 'bi-gear' },
+        // { path: '/admin/reports', label: 'Reports & Exports', icon: 'bi-bar-chart' },
+        // { path: '/admin/translations', label: 'Translations', icon: 'bi-translate' },
       ];
     default:
       return [];
