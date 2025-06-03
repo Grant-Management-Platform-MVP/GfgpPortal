@@ -44,7 +44,6 @@ const GranteeComparison = () => {
   const exportToCSV = () => {
     const csvRows = [];
 
-    // Ensure template and sections exist
     if (!template?.sections) {
       console.warn("No template sections available for CSV export.");
       return;
@@ -54,20 +53,34 @@ const GranteeComparison = () => {
       csvRows.push([`Section: ${section.title}`]);
       csvRows.push(['Question', ...selectedGrantees.map(g => g.granteeName || `Grantee #${g.userId}`)]);
 
-      // CORRECTED: Flatten questions from all subsections for CSV export
       const allQuestionsInSection = (section.subsections || [])
         .flatMap(subsection => subsection.questions || []);
 
       allQuestionsInSection.forEach((q) => {
-        const row = [q.questionText];
+        const stripHtml = (html) => html.replace(/<[^>]+>/g, '');
+
+        const questionRow = [stripHtml(q.questionText)];
+        const evidenceRow = ['Evidence Attached?'];
+
         selectedGrantees.forEach(grantee => {
-          const ans = granteeAnswers[grantee.id]?.[q.id]?.answer || '—';
-          row.push(ans);
+          const answerData = granteeAnswers[grantee.id]?.[q.id];
+
+          if (!answerData) {
+            questionRow.push('—');
+            evidenceRow.push('No');
+          } else {
+            const { answer, evidence } = answerData;
+            questionRow.push(answer || '—');
+            evidenceRow.push(evidence ? 'Yes' : 'No');
+          }
         });
-        csvRows.push(row);
+
+        csvRows.push(questionRow);
+        csvRows.push(evidenceRow);
       });
 
-      csvRows.push([]); // Add an empty row for separation between sections in CSV
+
+      csvRows.push([]); // Spacer
     });
 
     const csv = Papa.unparse(csvRows);
@@ -77,7 +90,6 @@ const GranteeComparison = () => {
     link.download = 'grantee_comparison.csv';
     link.click();
   };
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -105,7 +117,6 @@ const GranteeComparison = () => {
     try {
       // Assuming 'answers' might come as a stringified JSON
       const rawAnswers = typeof answers === 'string' ? JSON.parse(answers) : answers;
-
       // Flatten the nested structure if it exists
       const flattened = {};
       if (rawAnswers) {
