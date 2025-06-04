@@ -96,7 +96,7 @@ button:focus-visible {
 }
 
 .sidebar-link.active {
-    background-color: #64B5F6 !important;
+    background-color: #043873 !important;
     color: white !important;
     font-weight: 600;
     position: relative;
@@ -181,4 +181,235 @@ body.dark-mode .btn-outline-primary:hover {
     transition: border-left-color 0.3s ease, box-shadow 0.3s ease;
     border-left-width: 5px;
     border-left-style: solid;
+}
+
+
+/* DashboardLayout.css */
+
+
+/* General Layout */
+
+body.dark-mode {
+    background-color: #1a202c;
+    /* Dark background for the whole body */
+    color: #e2e8f0;
+    /* Light text color */
+}
+
+.light-mode-bg {
+    background-color: #f8f9fa;
+    /* Light background */
+}
+
+.dark-mode-bg {
+    background-color: #1a202c;
+    /* Dark background */
+}
+
+
+/* Sidebar */
+
+.sidebar {
+    transition: width 0.3s ease-in-out, background-color 0.3s ease-in-out;
+    flex-shrink: 0;
+    /* Prevent sidebar from shrinking */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    /* Subtle shadow */
+}
+
+.light-sidebar {
+    background-color: #64b5f6;
+    /* Light sidebar background */
+    color: #fff;
+}
+
+.dark-sidebar {
+    background-color: #2d3748;
+    /* Dark sidebar background */
+    color: #e2e8f0;
+}
+
+.collapsed-sidebar {
+    width: 70px !important;
+    /* Important to override inline style */
+}
+
+.sidebar-header {
+    height: 60px;
+    /* Match header height */
+    padding: 0 15px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    /* Separator */
+    margin-bottom: 0 !important;
+    /* Remove default margin */
+}
+
+.sidebar-header .app-name {
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: #333;
+    /* Dark text for app name */
+}
+
+.dark-sidebar .sidebar-header .app-name {
+    color: #e2e8f0;
+    /* Light text for app name in dark mode */
+}
+
+.sidebar-nav-links {
+    padding-top: 10px;
+}
+
+.sidebar-link {
+    color: #fff;
+    /* Muted text color for links */
+    padding: 10px 15px;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    transition: all 0.2s ease-in-out;
+}
+
+.sidebar-link i {
+    font-size: 1.1rem;
+}
+
+.sidebar-link:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #007bff;
+    /* Highlight on hover */
+}
+
+.sidebar-link.active {
+    background-color: #007bff;
+    /* Active link background */
+    color: #fff;
+    /* Active link text */
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+    /* Subtle shadow for active link */
+}
+
+.sidebar-link.active i {
+    color: #fff;
+}
+
+.dark-sidebar .sidebar-link {
+    color: #a0aec0;
+}
+
+.dark-sidebar .sidebar-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #90cdf4;
+}
+
+.dark-sidebar .sidebar-link.active {
+    background-color: #4299e1;
+    color: #fff;
+}
+
+
+/* Header */
+
+.dashboard-header {
+    height: 60px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.light-navbar {
+    background-color: #ffffff;
+    color: #333;
+}
+
+.dark-navbar {
+    background-color: #2d3748;
+    color: #e2e8f0;
+}
+
+.header-collapse-icon {
+    font-size: 1.5rem;
+    color: #6c757d;
+}
+
+.header-title {
+    color: #333;
+    font-weight: bold;
+}
+
+.dark-navbar .header-title {
+    color: #e2e8f0;
+}
+
+.header-right-section {
+    display: flex;
+    align-items: center;
+}
+
+.header-search .form-control {
+    border-radius: 20px;
+    padding-left: 15px;
+    border-color: #ced4da;
+}
+
+.header-search .btn {
+    border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
+    border-left: none;
+}
+
+.dark-navbar .header-search .form-control {
+    background-color: #4a5568;
+    color: #e2e8f0;
+    border-color: #4a5568;
+}
+
+.dark-navbar .header-search .form-control::placeholder {
+    color: #a0aec0;
+}
+
+.dark-navbar .header-search .btn {
+    background-color: #4a5568;
+    color: #a0aec0;
+    border-color: #4a5568;
+}
+
+.header-icons i {
+    font-size: 1.2rem;
+    color: #6c757d;
+    cursor: pointer;
+}
+
+.dark-navbar .header-icons i {
+    color: #a0aec0;
+}
+
+.header-profile-dropdown {
+    cursor: pointer;
+}
+
+.header-profile-dropdown .user-name {
+    font-weight: 500;
+    color: #333;
+}
+
+.dark-navbar .header-profile-dropdown .user-name {
+    color: #e2e8f0;
+}
+
+.logout-icon {
+    font-size: 1.2rem;
+    color: #dc3545;
+    /* Red color for logout */
+}
+
+
+/* Main Content */
+
+.dashboard-content {
+    background-color: #f4f5f7;
+    color: #000 !important;
+    /* Light gray background for content area */
+}
+
+.dark-mode .dashboard-content {
+    background-color: #1a202c;
+    /* Darker background for content area in dark mode */
 }

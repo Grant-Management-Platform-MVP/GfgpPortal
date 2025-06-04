@@ -52,6 +52,7 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure, id
   const currentStructure = propStructure || localStorage.getItem("gfgpStructure");
   // const currentAssessmentId = propAssessmentId;
   const isGrantor = user?.role === 'GRANTOR'; // case-sensitive match
+  const isGrantee = user?.role === 'GRANTEE'; // case-sensitive match
 
   useEffect(() => {
     const fetchData = async () => {
@@ -424,7 +425,7 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure, id
                   </Table>
                 </div>
               ))}
-              {recommendations[section.title]?.length > 0 && (
+              {isGrantee && recommendations[section.title]?.length > 0 && (
                 <div className="mt-4">
                   <h6 className="text-primary d-flex align-items-center mb-3">
                     <i className="bi bi-lightbulb me-2"></i> {/* Bootstrap icon */}

@@ -78,7 +78,7 @@ const SelectStructure = () => {
 
   return (
     <div className="container mt-4 position-relative">
-      <h2 className="text-center mb-3">Select Your GFGP Structure</h2>
+      <h2 className="text-center mb-3 text-dark">Select Your GFGP Structure</h2>
       <p className="text-center text-muted">
         Not sure what to pick? Read each option’s description carefully to guide your choice.
       </p>

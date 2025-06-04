@@ -25,6 +25,8 @@ const DashboardLayout = ({ title, children, userRole }) => {
   const hasSelectedStructure = localStorage.getItem('gfgpStructure');
   const [collapsed, setCollapsed] = useState(false);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
 
   useEffect(() => {
     document.body.classList.toggle('dark-mode', darkMode);
@@ -34,28 +36,22 @@ const DashboardLayout = ({ title, children, userRole }) => {
   const sidebarLinks = getSidebarLinks(userRole, hasSelectedStructure);
 
   const handleLogout = () => {
-    if (window.confirm('Are you sure you want to log out?')) {
-      localStorage.removeItem('user');
-      localStorage.removeItem('gfgpStructure');
-      window.location.href = '/';
-    }
+    localStorage.removeItem('user');
+    localStorage.removeItem('gfgpStructure');
+    window.location.href = '/';
   };
 
+
   return (
-    <div className={`d-flex ${darkMode ? 'bg-dark text-white' : 'bg-white text-dark'}`} style={{ minHeight: '100vh' }}>
+    <div className={`d-flex min-vh-100 ${darkMode ? 'dark-mode-bg' : 'light-mode-bg'}`}>
       {/* Sidebar */}
-      <div className={`d-flex flex-column p-3 sidebar border-end ${collapsed ? 'collapsed-sidebar' : ''}`} style={{ width: collapsed ? '70px' : '250px' }}>
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          {!collapsed && <img src={logo} alt="Logo" style={{ height: '50px' }} />}
-          <button
-            className="btn btn-sm btn-outline-secondary"
-            onClick={() => setCollapsed(!collapsed)}
-          >
-            <i className={`bi ${collapsed ? 'bi-arrow-bar-right' : 'bi-arrow-bar-left'}`}></i>
-          </button>
+      <nav className={`sidebar d-flex flex-column p-3 shadow-sm ${collapsed ? 'collapsed-sidebar' : ''} ${darkMode ? 'dark-sidebar' : 'light-sidebar'}`}>
+        <div className="sidebar-header d-flex align-items-center mb-4">
+          <img src={logo} alt="Logo" className={`img-fluid ${collapsed ? 'd-none' : ''}`} style={{ maxHeight: '40px' }} />
+          {!collapsed && <span className="ms-2 app-name">GFGP</span>}
         </div>
 
-        <ul className="nav nav-pills flex-column mb-auto">
+        <ul className="nav nav-pills flex-column sidebar-nav-links">
           {sidebarLinks.map(({ path, label, icon, disabled }) => (
             <SidebarLink
               key={path}
@@ -68,36 +64,80 @@ const DashboardLayout = ({ title, children, userRole }) => {
             />
           ))}
         </ul>
-
         {!collapsed && (
-          <div className="mt-auto text-center">
+          <div className="mt-auto">
             <button
-              className="btn btn-sm btn-outline-primary"
+              className="btn btn-outline-secondary btn-sm w-100 mt-3"
               onClick={() => setDarkMode(!darkMode)}
             >
               <i className={`bi ${darkMode ? 'bi-sun' : 'bi-moon'}`}></i> {darkMode ? ' Light Mode' : ' Dark Mode'}
             </button>
           </div>
         )}
-      </div>
+      </nav>
+      {/* Content */}
+      <div className="flex-grow-1 d-flex flex-column">
+        <header className={`navbar navbar-expand-lg shadow-sm ${darkMode ? 'dark-navbar' : 'light-navbar'} border-bottom px-4 dashboard-header`}>
+          <div className="container-fluid d-flex justify-content-between align-items-center w-100">
+            <div className="d-flex align-items-center">
+              <button
+                className="btn btn-link me-3 p-0"
+                onClick={() => setCollapsed(!collapsed)}
+              >
+                <i className={`bi ${collapsed ? 'bi-list' : 'bi-justify'} header-collapse-icon`}></i>
+              </button>
+              {/* This title is static based on the screenshot, but you can pass 'title' prop here if dynamic */}
+              <h5 className="mb-0 header-title">{title}</h5>
+            </div>
 
-      {/* Main Content */}
-      <div className="flex-grow-1">
-        <header className={`navbar navbar-expand-lg ${darkMode ? 'bg-dark text-white' : 'bg-primary text-white'} px-4`} style={{ height: '60px' }}>
-          <div className="ms-auto d-flex align-items-center">
-            <Link to={`/${userRole}/profile`} className="text-white me-3"><i className="bi bi-person-circle me-1"></i> Profile</Link>
-            <button onClick={handleLogout} className="btn btn-link text-white text-decoration-none">
-              <i className="bi bi-box-arrow-right me-1"></i> Logout
-            </button>
+            <div className="d-flex align-items-center header-right-section">
+              {/* Search bar, notifications, and profile as seen in screenshot */}
+              <div className="header-icons me-3">
+                <i className="bi bi-bell-fill me-3"></i> {/* Notification icon */}
+              </div>
+
+              <div className="header-profile-dropdown d-flex align-items-center">
+                <div className="container-fluid d-flex justify-content-end">
+                  <Link to={`/${userRole}/profile`} className="btn btn-success btn-lg me-2">
+                    <i className="bi bi-person-circle"></i> {!collapsed && 'Profile'}
+                  </Link>
+                  <button className="btn btn-danger btn-lg" onClick={() => setShowLogoutModal(true)}>
+                    <i className="bi bi-box-arrow-right"></i>
+                    Logout
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </header>
 
-        <main className="p-4">
-          <h4>{title}</h4>
-          <hr />
+        <main className="p-4 flex-grow-1 dashboard-content">
           {children}
         </main>
       </div>
+      {showLogoutModal && (
+        <div className="modal fade show d-block" tabIndex="-1" role="dialog" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered" role="document">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Confirm Logout</h5>
+                <button type="button" className="btn-close" onClick={() => setShowLogoutModal(false)} aria-label="Close"></button>
+              </div>
+              <div className="modal-body">
+                <p>Are you sure you want to log out?</p>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowLogoutModal(false)}>
+                  Cancel
+                </button>
+                <button type="button" className="btn btn-danger" onClick={handleLogout}>
+                  Yes, Log Out
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -106,7 +146,7 @@ const getSidebarLinks = (role, hasSelectedStructure) => {
   switch (role) {
     case 'grantee':
       return [
-        { path: '/grantee/', label: 'Home', icon: 'bi-home' },
+        { path: '/grantee/', label: 'Home', icon: 'bi-house' },
         { path: '/grantee/select-structure', label: 'Select GFGP Structure', icon: 'bi-diagram-3' },
         { path: '/grantee/assessments', label: 'GFGP Assessments', icon: 'bi-ui-checks', disabled: !hasSelectedStructure },
         { path: '/grantee/compliance-reports', label: 'Compliance Reports', icon: 'bi-bar-chart-line' },
@@ -114,7 +154,7 @@ const getSidebarLinks = (role, hasSelectedStructure) => {
       ];
     case 'grantor':
       return [
-        { path: '/grantor/', label: 'Home', icon: 'bi-home' },
+        { path: '/grantor/', label: 'Home', icon: 'bi-house' },
         { path: '/grantor/grantor-overview', label: 'Metrics Overview', icon: 'bi-speedometer2' },
         { path: '/grantor/invites', label: 'Assessment Invitations', icon: 'bi-envelope-paper' },
         { path: '/grantor/view-assessments', label: 'Assessments Comparison', icon: 'bi-people' },
@@ -129,13 +169,10 @@ const getSidebarLinks = (role, hasSelectedStructure) => {
       ];
     case 'admin':
       return [
-        { path: '/admin/', label: 'Home', icon: 'bi-home' },
+        { path: '/admin/', label: 'Home', icon: 'bi-house' },
         { path: '/admin/users', label: 'User Management', icon: 'bi-people' },
         { path: '/admin/questionnaire-creation', label: 'Create Questionnaire', icon: 'bi-plus-square' },
         { path: '/admin/questionnaire-management', label: 'Manage Questionnaires', icon: 'bi-layout-text-window' },
-        // { path: '/admin/settings', label: 'System Settings', icon: 'bi-gear' },
-        // { path: '/admin/reports', label: 'Reports & Exports', icon: 'bi-bar-chart' },
-        // { path: '/admin/translations', label: 'Translations', icon: 'bi-translate' },
       ];
     default:
       return [];
