@@ -8,6 +8,7 @@ import TemplateList from '@components/questionnaires/TemplateList';
 import QuestionnaireEditor from '@components/questionnaires/QuestionnaireEditor';
 import AdminHome from '@pages/admin/AdminHome';
 import RecommendationForm from '../admin/RecommendationForm';
+import ReportsDashboard from '@pages/admin/ReportsDashboard';
 
 const AdminDashboard = () => {
   return (
@@ -20,6 +21,7 @@ const AdminDashboard = () => {
         <Route path="questionnaire-management" element={<TemplateList />} />
         <Route path="questionnaire-editor/:id" element={<QuestionnaireEditor />} />
         <Route path="recommendations" element={<RecommendationForm/>} />
+        <Route path="reports" element={<ReportsDashboard/>} />
       </Routes>
     </DashboardLayout>
   );
