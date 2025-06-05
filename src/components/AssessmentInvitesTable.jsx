@@ -3,6 +3,9 @@ import { Table, Button } from 'react-bootstrap';
 
 const AssessmentInvitesTable = ({ data, onStartAssessment }) => {
     const validInvites = data.filter(({ assessment }) => assessment !== null);
+    const showTieredLevelColumn = validInvites.some(
+        (row) => row.invite.structureType?.toLowerCase() === 'tiered'
+    );
 
     return (
         <div>
@@ -12,6 +15,7 @@ const AssessmentInvitesTable = ({ data, onStartAssessment }) => {
                     <tr>
                         <th>#</th>
                         <th>Structure</th>
+                        {showTieredLevelColumn && <th>Tiered Level</th>}
                         <th>Invited By</th>
                         <th>Date Invited</th>
                         <th>Assessment</th>
@@ -21,17 +25,28 @@ const AssessmentInvitesTable = ({ data, onStartAssessment }) => {
                 <tbody>
                     {validInvites.length === 0 ? (
                         <tr>
-                            <td colSpan="6" className="text-center">No valid assessment invites found.</td>
+                            <td colSpan={showTieredLevelColumn ? "7" : "6"} className="text-center">No valid assessment invites found.</td>
                         </tr>
                     ) : (
                         validInvites.map((row, index) => {
                             const { invite, assessment } = row;
                             const structure = invite.structureType?.toUpperCase();
+                            const tieredLevel = invite.tieredLevel;
 
                             return (
                                 <tr key={invite.id}>
                                     <td>{index + 1}</td>
                                     <td>{structure}</td>
+                                    {/* Conditional TD for Tiered Level */}
+                                    {showTieredLevelColumn && (
+                                        <td>
+                                            {/* Display the tieredLevel if present, otherwise 'N/A' or empty */}
+                                            {structure === 'TIERED' && tieredLevel
+                                                ? tieredLevel.charAt(0).toUpperCase() + tieredLevel.slice(1)
+                                                : '—' // Display dash for non-tiered or missing tieredLevel
+                                            }
+                                        </td>
+                                    )}
                                     <td>{invite.invitedBy}</td>
                                     <td>{new Date(invite.dateInvited).toLocaleString()}</td>
                                     <td>{assessment.title || '—'}</td>
