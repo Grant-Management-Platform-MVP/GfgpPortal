@@ -67,7 +67,7 @@ const DashboardLayout = ({ title, children, userRole }) => {
         {!collapsed && (
           <div className="mt-auto">
             <button
-              className="btn btn-outline-secondary btn-sm w-100 mt-3"
+              className="btn btn-dark btn-slg w-100 mt-3"
               onClick={() => setDarkMode(!darkMode)}
             >
               <i className={`bi ${darkMode ? 'bi-sun' : 'bi-moon'}`}></i> {darkMode ? ' Light Mode' : ' Dark Mode'}
@@ -160,6 +160,7 @@ const getSidebarLinks = (role, hasSelectedStructure) => {
         { path: '/grantor/view-assessments', label: 'Assessments Comparison', icon: 'bi-people' },
         { path: '/grantor/shared-reports', label: 'Grantee Reports', icon: 'bi-file-earmark-bar-graph' },
         { path: '/grantor/audit-logs', label: 'Audit Logs', icon: 'bi-journal-text' },
+         { path: '/grantor/grantee-reports', label: 'Reports', icon: 'bi-bar-chart' }
       ];
     case 'auditor':
       return [
@@ -173,6 +174,7 @@ const getSidebarLinks = (role, hasSelectedStructure) => {
         { path: '/admin/users', label: 'User Management', icon: 'bi-people' },
         { path: '/admin/questionnaire-creation', label: 'Create Questionnaire', icon: 'bi-plus-square' },
         { path: '/admin/questionnaire-management', label: 'Manage Questionnaires', icon: 'bi-layout-text-window' },
+        { path: '/admin/reports', label: 'Reports & Exports', icon: 'bi-bar-chart' },
       ];
     default:
       return [];
