@@ -7,6 +7,7 @@ import GranteeComparison from '../../components/GranteeComparison';
 import AuditLogs from '../../components/AuditLogs';
 import ComplianceReportsWrapper from '../../components/ComplianceReportsWrapper';
 import SharedReportsList from '../../components/SharedReportsList';
+import ReportsDashboard from '@pages/admin/ReportsDashboard';
 
 const GrantorDashboard = () => {
   return (
@@ -19,6 +20,7 @@ const GrantorDashboard = () => {
           <Route path="view-report/:granteeId/:structure/:id" element={<ComplianceReportsWrapper />} />
           <Route path="shared-reports" element={<SharedReportsList />} />
           <Route path="audit-logs" element={<AuditLogs/>} />
+           <Route path="grantee-reports" element={<ReportsDashboard/>} />
         </Routes>
     </DashboardLayout>
   );
