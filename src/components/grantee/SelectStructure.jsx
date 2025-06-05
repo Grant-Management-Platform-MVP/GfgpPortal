@@ -1,9 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Spinner, Alert, Badge, Button, Tab, Nav, Row, Col, Fade } from 'react-bootstrap';
+import { Spinner, Alert, Badge, Button, Tab, Nav, Row, Col, Fade, Form } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import { FaCubes, FaBrain, FaLayerGroup } from 'react-icons/fa';
 import 'react-toastify/dist/ReactToastify.css';
+
+// Define the Tiered levels
+const TIERED_LEVEL_OPTIONS = [
+  { id: 'gold', title: 'Gold', description: 'Comprehensive controls for large, complex organizations with high-risk profiles.' },
+  { id: 'silver', title: 'Silver', description: 'Balanced controls for medium-sized organizations with moderate complexity and risk.' },
+  { id: 'bronze', title: 'Bronze', description: 'Streamlined controls for smaller organizations with lower complexity and risk.' },
+];
 
 const GFGP_OPTIONS = [
   {
@@ -12,7 +19,7 @@ const GFGP_OPTIONS = [
     description:
       'Basic controls for smaller organizations. Suitable for grantees with minimal operational complexity.',
     color: '#64b5f6',
-    icon: <FaCubes size={28} style={{color:'#033973' }} />,
+    icon: <FaCubes size={28} style={{ color: '#033973' }} />,
     badge: 'Best for small orgs',
   },
   {
@@ -21,16 +28,16 @@ const GFGP_OPTIONS = [
     description:
       'Includes all Foundation controls plus enhanced governance and financial risk controls.',
     color: '#04ca75',
-    icon: <FaBrain size={28} style={{color:'#04ca75' }} />,
+    icon: <FaBrain size={28} style={{ color: '#04ca75' }} />,
     badge: 'Recommended for growing orgs',
   },
   {
     id: 'tiered',
     title: 'Tiered',
     description:
-      'A dynamic version of GFGP that adapts to the size, complexity, and risk profile of the grantee.',
+      'A dynamic version of GFGP that adapts to the size, complexity, and risk profile of the grantee. Please select a level below.',
     color: '#ffbf60',
-    icon: <FaLayerGroup size={28} style={{color:'#ffbf60' }} />,
+    icon: <FaLayerGroup size={28} style={{ color: '#ffbf60' }} />,
     badge: 'Most flexible',
   },
 ];
@@ -38,12 +45,23 @@ const GFGP_OPTIONS = [
 const SelectStructure = () => {
   const navigate = useNavigate();
   const [selected, setSelected] = useState(null);
+  const [selectedTieredLevel, setSelectedTieredLevel] = useState(null); // New state for Tiered levels
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
 
   const handleSelect = async (structureId) => {
     if (loading) return;
 
+    // If selecting 'tiered', don't immediately save. Just set 'selected' and wait for sub-level.
+    if (structureId === 'tiered' && selected !== 'tiered') {
+      setSelected(structureId);
+      setSelectedTieredLevel(null); // Reset sub-level when main 'Tiered' is selected
+      setSaved(false); // Reset saved state if switching to Tiered
+      return;
+    }
+
+    // If 'tiered' is already selected and we're clicking the button within its tab,
+    // or if it's a non-tiered option, proceed with saving.
     setSelected(structureId);
     setLoading(true);
 
@@ -52,16 +70,44 @@ const SelectStructure = () => {
 
     try {
       const BASE_URL = import.meta.env.VITE_BASE_URL;
+      const payload = {
+        structure: structureId,
+        userId
+      };
+
+      if (structureId === 'tiered') {
+        if (!selectedTieredLevel) {
+          toast.error('Please select a Tiered level (Gold, Silver, or Bronze).', {
+            autoClose: 3000,
+            position: 'top-center',
+          });
+          setLoading(false);
+          return; // Prevent saving if tiered level isn't selected
+        }
+        payload.tieredLevel = selectedTieredLevel;
+      }
+
       const res = await fetch(BASE_URL + 'gfgp/structure', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ structure: structureId, userId }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) throw new Error('Failed to save structure');
 
-      toast.success(`Structure "${structureId}" selected successfully!`);
+      let successMessage = `Structure "${structureId}" selected successfully!`;
+      if (structureId === 'tiered' && selectedTieredLevel) {
+        successMessage = `Tiered structure "${selectedTieredLevel}" selected successfully!`;
+      }
+      toast.success(successMessage);
+
       localStorage.setItem('gfgpStructure', structureId);
+      if (structureId === 'tiered' && selectedTieredLevel) {
+        localStorage.setItem('gfgpTieredLevel', selectedTieredLevel);
+      } else {
+        localStorage.removeItem('gfgpTieredLevel'); // Clear if not tiered
+      }
+
 
       setSaved(true);
     } catch (err) {
@@ -74,7 +120,22 @@ const SelectStructure = () => {
     }
   };
 
-  const handleProceed = () => navigate('/grantee/questionnaire');
+  const handleProceed = () => {
+    // If Tiered is selected and a level isn't, prompt the user
+    if (selected === 'tiered' && !selectedTieredLevel) {
+      toast.warn('Please select a Tiered level before starting the assessment.', {
+        autoClose: 3000,
+        position: 'top-center',
+      });
+      return;
+    }
+    navigate('/grantee/questionnaire');
+  };
+
+  const handleTieredLevelChange = (levelId) => {
+    setSelectedTieredLevel(levelId);
+    setSaved(false); // Reset saved state if changing tiered level
+  };
 
   return (
     <div className="container mt-4 position-relative">
@@ -139,6 +200,34 @@ const SelectStructure = () => {
                         {option.title} <Badge bg="info">{option.badge}</Badge>
                       </h3>
                       <p className="text-muted">{option.description}</p>
+
+                      {/* Conditional rendering for Tiered levels */}
+                      {option.id === 'tiered' && selected === 'tiered' && (
+                        <div className="mt-4 p-3 border rounded" style={{ borderColor: option.color }}>
+                          <h5 className="mb-3">Select a Tiered Level:</h5>
+                          <Form>
+                            {TIERED_LEVEL_OPTIONS.map((level) => (
+                              <Form.Check
+                                key={level.id}
+                                type="radio"
+                                id={`tiered-level-${level.id}`}
+                                name="tieredLevel"
+                                label={
+                                  <>
+                                    <strong>{level.title}</strong> - {level.description}
+                                  </>
+                                }
+                                value={level.id}
+                                checked={selectedTieredLevel === level.id}
+                                onChange={() => handleTieredLevelChange(level.id)}
+                                className="mb-2"
+                              />
+                            ))}
+                          </Form>
+                          <hr className="my-3" />
+                        </div>
+                      )}
+
                       <Button
                         variant={selected === option.id ? 'primary lg block' : 'outline-primary'}
                         style={{
@@ -146,14 +235,15 @@ const SelectStructure = () => {
                           backgroundColor: selected === option.id ? option.color : '',
                         }}
                         onClick={() => handleSelect(option.id)}
-                        disabled={loading}
+                        disabled={loading || (option.id === 'tiered' && !selectedTieredLevel)} // Disable 'Select' for Tiered if no sub-level
+                        className="mt-3" // Add margin top for button
                       >
                         {loading && selected === option.id ? (
                           <>
                             <Spinner size="sm" className="me-2" /> Saving...
                           </>
                         ) : (
-                          `Select ${option.title}`
+                          `Select ${option.title}${option.id === 'tiered' && selectedTieredLevel ? ` (${selectedTieredLevel})` : ''}`
                         )}
                       </Button>
                     </div>
@@ -161,7 +251,6 @@ const SelectStructure = () => {
                 </div>
               ))}
             </Tab.Content>
-
           </Col>
         </Row>
       </Tab.Container>
