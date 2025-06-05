@@ -18,8 +18,24 @@ const DynamicQuestionnaireBuilder = () => {
   const [sections, setSections] = useState([]);
   // State for controlling the preview modal visibility
   const [showModal, setShowModal] = useState(false);
+  const [tieredLevel, setTieredLevel] = useState('');
+  const [loading, setLoading] = useState(false);
   // Base URL for API calls (assuming it's set in environment variables)
   const BASE_URL = import.meta.env.VITE_BASE_URL;
+
+  // Define the main structures.
+  const mainStructures = [
+    { id: "foundation", name: "Foundation" },
+    { id: "advanced", name: "Advanced" },
+    { id: "tiered", name: "Tiered" }
+  ];
+
+  // Define the tiered levels
+  const tieredLevelsOptions = [
+    { id: "gold", name: "Gold" },
+    { id: "silver", name: "Silver" },
+    { id: "bronze", name: "Bronze" }
+  ];
 
   /**
    * Recalculates "unit" weights in a bottom-up manner for frontend display.
@@ -284,14 +300,41 @@ const DynamicQuestionnaireBuilder = () => {
   /**
    * Handles the submission of the questionnaire template to the backend.
    */
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault(); // Prevent default form submission behavior
+    setLoading(true);
+
+    // --- Client-side Validation ---
+    if (!structure) {
+      toast.error("Please select a GFGP Structure.");
+      setLoading(false);
+      return;
+    }
+    if (structure === 'tiered' && !tieredLevel) {
+      toast.error("Please select a Tiered Level (Gold, Silver, or Bronze).");
+      setLoading(false);
+      return;
+    }
+    if (!title) {
+      toast.error("Please enter a title for the questionnaire.");
+      setLoading(false);
+      return;
+    }
     // Generate a unique version code for the template
-    const versionCode = `${structure.toUpperCase()}_${String(Math.floor(Math.random() * 999)).padStart(3, "0")}`;
+    let versionCode;
+    if (structure === 'tiered') {
+      versionCode = `${structure.toUpperCase()}_${tieredLevel.toUpperCase()}_${String(Math.floor(Math.random() * 999)).padStart(3, "0")}`;
+    } else {
+      versionCode = `${structure.toUpperCase()}_${String(Math.floor(Math.random() * 999)).padStart(3, "0")}`;
+    }
+
 
     // Ensure sections data is up-to-date with current unit weights before submission
     const finalSections = recalculateSectionWeights(sections);
 
     console.log("Final sections for submission:", finalSections);
+    console.log("Submitting with structure:", structure, "tieredLevel:", tieredLevel, "title:", title);
+
 
     // Construct the payload for the API call
     const payload = {
@@ -299,6 +342,8 @@ const DynamicQuestionnaireBuilder = () => {
       title,
       templateCode: versionCode,
       version: "1.0",
+      // Conditionally include tieredLevel
+      tieredLevel: structure === 'tiered' ? tieredLevel : null, // Send null for non-tiered
       contentJson: {
         templateCode: versionCode,
         version: "1.0",
@@ -317,6 +362,7 @@ const DynamicQuestionnaireBuilder = () => {
         toast.success("Questionnaire template created successfully.");
         // Reset form after successful submission
         setStructure("");
+        setTieredLevel("");
         setTitle("");
         setSections([]);
       } else {
@@ -357,7 +403,7 @@ const DynamicQuestionnaireBuilder = () => {
               <h6 className="text-lg font-medium mb-1">
                 {i + 1}. {s.title} (Section Units: {s.weight})
               </h6>
-              <p className="text-gray-600 mb-2">{s.description}</p>
+              <p className="text-gray-600 mb-2" dangerouslySetInnerHTML={{ __html: s.description }}/>
 
               {(s.subsections || []).length > 0 && (
                 <p className="ps-3 text-gray-700">
@@ -374,12 +420,12 @@ const DynamicQuestionnaireBuilder = () => {
                   <h6 className="text-md font-medium mb-1">
                     {`${i + 1}.${subIndex + 1} ${sub.title} (Subsection Units: ${sub.weight})`}
                   </h6>
-                  <p className="text-gray-600 mb-2">{sub.description}</p>
+                  <p className="text-gray-600 mb-2" dangerouslySetInnerHTML={{ __html: sub.description }}/>
                   <ul className="list-disc list-inside text-sm text-gray-800">
                     {(sub.questions || []).map((q) => (
                       <li key={q.id} className="mb-1">
-                        <strong>{q.questionText}</strong> (Code: {q.questionCode}, Type: {q.type}, Units: {q.weight})<br />
-                        {q.guidance && <small className="text-gray-500"><em>Guidance: {q.guidance}</em></small>}<br />
+                        <strong dangerouslySetInnerHTML={{ __html: q.questionText }} /> (Code: {q.questionCode}, Type: {q.type}, Units: {q.weight})<br />
+                        {q.guidance && <small className="text-gray-500"><em>Guidance: <span dangerouslySetInnerHTML={{ __html: q.guidance }} /></em></small>}<br />
                         {q.options?.length > 0 && (
                           <div className="flex flex-wrap gap-1 text-xs text-blue-700 mt-1">
                             Options: {q.options.map((opt, optIndex) => (
@@ -414,19 +460,47 @@ const DynamicQuestionnaireBuilder = () => {
   return (
     <div className="container py-4">
       <h1 className="mb-4 h3">Create Questionnaire</h1>
-      <div className="mb-3">
-        <label htmlFor="structure" className="form-label">Structure</label>
-        <select
-          id="structure"
-          className="form-select"
-          value={structure}
-          onChange={(e) => setStructure(e.target.value)}
-        >
-          <option value="">Select structure</option>
-          <option value="foundation">Foundation</option>
-          <option value="advanced">Advanced</option>
-          <option value="tiered">Tiered</option>
-        </select>
+      <div className="card p-4 shadow-sm">
+        <h5 className="mb-3">Select GFGP Structure</h5>
+        <div className="mb-3">
+          <select
+            id="structureSelect"
+            className="form-select"
+            value={structure}
+            onChange={(e) => {
+              setStructure(e.target.value);
+              setTieredLevel('');
+            }}
+          >
+            <option value="">-- Choose Structure --</option>
+            {mainStructures.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Conditional rendering for Tiered sub-level selection */}
+        {structure === 'tiered' && (
+          <div className="mb-3 mt-3 p-3 border rounded bg-light">
+            <label htmlFor="tieredLevelSelect" className="form-label">Choose Tiered Level:</label>
+            <select
+              id="tieredLevelSelect"
+              className="form-select"
+              value={tieredLevel}
+              onChange={(e) => setTieredLevel(e.target.value)}
+              required
+            >
+              <option value="">-- Select Tiered Level --</option>
+              {tieredLevelsOptions.map((level) => (
+                <option key={level.id} value={level.id}>
+                  {level.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       <div className="mb-4">
@@ -438,6 +512,7 @@ const DynamicQuestionnaireBuilder = () => {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="e.g., GFGP Advanced Template v1"
+          required
         />
       </div>
 
@@ -673,9 +748,15 @@ const DynamicQuestionnaireBuilder = () => {
         <button
           className="btn btn-primary"
           onClick={handleSubmit}
-          disabled={!structure || !title || sections.length === 0}
+          disabled={loading || !structure || (structure === 'tiered' && !tieredLevel) || !title || sections.length === 0}
         >
-          Submit Questionnaire
+          {loading ? (
+            <>
+              {/* <Spinner size="sm" animation="border" className="me-2" /> */} Saving...
+            </>
+          ) : (
+            'Create Questionnaire Template'
+          )}
         </button>
       </div>
 
