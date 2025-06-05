@@ -111,7 +111,7 @@ const AssessmentListPage = () => {
 
             {!loading && assessments.length === 0 && (
                 <Alert variant="info" className="text-center">
-                    No assessments found. <Button variant="link" onClick={() => navigate('/grantee/select-structure')}>Start your first assessment</Button>
+                    No assessments found. <Button variant="link" onClick={() => navigate('/grantee/questionnaire')}>Start your first assessment</Button>
                 </Alert>
             )}
 
