@@ -280,14 +280,14 @@ const ConsentRequestsCard = () => {
                   <p>No invitations received at the moment.</p>
                 </div>
               ) : (
-                assessmentInvites.map((invite) => (
-                  <div key={invite.id} className="d-flex justify-content-between align-items-start border rounded p-3 mb-3 flex-column flex-md-row">
+                assessmentInvites.map((item) => (
+                  <div key={item.invite.id} className="d-flex justify-content-between align-items-start border rounded p-3 mb-3 flex-column flex-md-row">
                     <div className="flex-grow-1">
-                      <div><strong>Invited By (Grantor):</strong> {invite.invitedBy || `Grantor #${invite.grantorId}`}</div>
-                      <div><strong>Grantee Name:</strong> {invite.granteeName}</div>
-                      <div><strong>Structure:</strong> {invite.structureType}</div>
+                      <div><strong>Invited By (Grantor):</strong> {item.invite.invitedBy || `Grantor #${item.invite.grantorId}`}</div>
+                      <div><strong>Grantee Name:</strong> {item.invite.granteeName}</div>
+                      <div><strong>Structure:</strong> {item.invite.structureType}</div>
                       <div className="text-muted small">
-                        Date Invited: {new Date(invite.dateInvited).toLocaleString()}
+                        Date Invited: {new Date(item.invite.dateInvited).toLocaleString()}
                       </div>
                     </div>
                   </div>
