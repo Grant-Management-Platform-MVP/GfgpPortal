@@ -560,7 +560,7 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
                         <Form.Group key={q.id} className="mb-4">
                           <Form.Label className="fw-semibold fs-6 d-inline-flex align-items-center gap-1">
                             <span dangerouslySetInnerHTML={{ __html: q.questionText }} />
-                            {q.required && <span className="text-danger">*</span>}
+                            {q.required}
                           </Form.Label>
                           {q.guidance && (
                             <div className="text-muted small mt-2" dangerouslySetInnerHTML={{ __html: q.guidance }} />
