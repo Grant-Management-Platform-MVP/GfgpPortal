@@ -221,6 +221,7 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure, id
       await axios.put(`${BASE_URL}gfgp/assessment-submissions/${questionnaire.id}/return-for-fixes`, {
         funderId: user?.userId, // The ID of the funder performing the action
         updatedAnswers: updatedAnswersForBackend, // Send the full, updated answers object
+        granteeId: currentUserId // The ID of the grantee to whom this assessment belongs
       });
 
       toast.success("Assessment returned to grantee for fixes!");
