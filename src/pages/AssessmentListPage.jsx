@@ -72,6 +72,7 @@ const AssessmentListPage = () => {
 
         if (status === 'SENT_BACK') url += '?mode=fix';
         else if (status === 'SUBMITTED') url += '?mode=view';
+        else if (status === 'SAVED') url += '?mode=edit';
 
         navigate(url);
     };
@@ -111,7 +112,14 @@ const AssessmentListPage = () => {
 
             {!loading && assessments.length === 0 && (
                 <Alert variant="info" className="text-center">
-                    No assessments found. <Button variant="link" onClick={() => navigate('/grantee/questionnaire')}>Start your first assessment</Button>
+                    No assessments found yet.<br />
+                    To get started, you'll need to first select your preffered assessment structure (Foundation, Advanced, or Tiered).<br />
+                    Once you've made a selection, you can begin your first assessment.
+                    <div className="mt-2">
+                        <Button variant="link" onClick={() => navigate('/grantee/questionnaire')}>
+                            Start your first assessment
+                        </Button>
+                    </div>
                 </Alert>
             )}
 

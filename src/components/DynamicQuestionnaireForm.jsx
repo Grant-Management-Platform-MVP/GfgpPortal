@@ -16,6 +16,7 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
   const [hasInteracted, setHasInteracted] = useState(false);
   const [formMode, setFormMode] = useState(null);
   const [lastSaved, setLastSaved] = useState(null);
+  const [canSubmit, setCanSubmit] = useState(true);
 
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const user = JSON.parse(localStorage.getItem("user"));
@@ -61,6 +62,13 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
   };
 
   useEffect(() => {
+    if (formMode !== 'VIEW_ONLY') {
+      setCanSubmit(true);
+    }
+  }, [answers]);
+
+
+  useEffect(() => {
     let isMounted = true;
 
     if (!userId || !structure) {
@@ -74,7 +82,23 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const templateRes = await axios.get(`${BASE_URL}gfgp/questionnaire-templates/structure/${structure}`);
+
+        let templateApiUrl;
+        let tieredLevel = null;
+
+        if (structure === 'tiered') {
+          tieredLevel = localStorage.getItem('gfgpTieredLevel'); // This should be 'gold', 'silver', etc.
+          console.log('tieredLevel', tieredLevel);
+        }
+
+        if (structure === 'tiered' && tieredLevel) {
+          // Send tieredLevel as a query parameter as per our backend refactor plan
+          templateApiUrl = `${BASE_URL}gfgp/questionnaire-templates/structure/${structure}/${tieredLevel}`;
+        } else {
+          // For non-tiered structures (Foundation, Advanced), no tieredLevel needed
+          templateApiUrl = `${BASE_URL}gfgp/questionnaire-templates/structure/${structure}`;
+        }
+        const templateRes = await axios.get(templateApiUrl);
         const [templateObj] = templateRes.data;
         if (!templateObj || !templateObj.content) throw new Error("Template content missing.");
         const parsedContent = typeof templateObj.content === "string" ? JSON.parse(templateObj.content) : templateObj.content;
@@ -207,8 +231,17 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
   const saveDraft = async () => {
     setSaving(true);
     try {
+      let tieredLevel = null;
+
+      if (structure === 'tiered') {
+        tieredLevel = localStorage.getItem('gfgpTieredLevel'); // This should be 'gold', 'silver', etc.
+        console.log('tieredLevel', tieredLevel);
+      }
+
       await axios.post(`${BASE_URL}gfgp/assessment-responses/save`, {
         userId,
+        structure,
+        tieredLevel: structure === 'tiered' ? tieredLevel : null,
         templateCode: template.templateCode,
         version: template.version,
         answers: Object.fromEntries(
@@ -220,6 +253,7 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
       });
       setLastSaved(new Date());
       toast.success("Draft saved!");
+      setCanSubmit(false);
     } catch (err) {
       console.error("Failed to save draft", err);
       toast.error("Failed to save draft.");
@@ -274,6 +308,13 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
     }
 
     try {
+
+      let tieredLevel = null;
+
+      if (structure === 'tiered') {
+        tieredLevel = localStorage.getItem('gfgpTieredLevel'); // This should be 'gold', 'silver', etc.
+        console.log('tieredLevel', tieredLevel);
+      }
       const answersForSubmission = Object.fromEntries(
         Object.entries(answers).map(([qid, ansObj]) => {
           const { funderFeedback: _, ...rest } = ansObj;
@@ -286,7 +327,7 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
       const submissionPayload = {
         userId,
         structure,
-        tieredLevel: structure === 'tiered' ? template.tieredLevel : null,
+        tieredLevel: structure === 'tiered' ? tieredLevel : null,
         version: template.version,
         answers: structuredAnswers,
       };
@@ -579,7 +620,7 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
 
         <div className="text-end d-grid gap-2">
           {formMode !== "VIEW_ONLY" && (
-            <Button type="submit" variant="success" size="lg" disabled={saving}>
+            <Button type="submit" variant="success" size="lg" disabled={saving || !canSubmit}>
               {formMode === "FIX_MODE" ? "Amend & Resubmit" : "Submit"}
             </Button>
           )}

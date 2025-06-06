@@ -9,7 +9,7 @@ const AssessmentInvitesTable = ({ data, onStartAssessment }) => {
 
     return (
         <div>
-            <h4 className="mb-3">Your Assessment Invitations</h4>
+            <h5 className="mb-3 text-center">Your Assessment Invitations From Funders</h5>
             <Table striped bordered hover responsive>
                 <thead className="table-light">
                     <tr>
