@@ -17,6 +17,8 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
   const [formMode, setFormMode] = useState(null);
   const [lastSaved, setLastSaved] = useState(null);
   const [canSubmit, setCanSubmit] = useState(true);
+  const [feedbackResolved, setFeedbackResolved] = useState(false);
+
 
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const user = JSON.parse(localStorage.getItem("user"));
@@ -477,9 +479,22 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
           </>
         )}
         {/* Display funder feedback prominently when in FIX_MODE */}
-        {formMode === "FIX_MODE" && response.funderFeedback && (
+        {formMode === "FIX_MODE" && response.funderFeedback && !feedbackResolved && (
           <Alert variant="info" className="p-2 my-2 h6 text-dark text-secondary">
-            <strong>Reviewer Feedback:<p className="lead text-success font-weight-bold" dangerouslySetInnerHTML={{ __html: response.funderFeedback }} /></strong>
+            <strong>Reviewer Feedback:</strong>
+            <p
+              className="lead text-success font-weight-bold"
+              dangerouslySetInnerHTML={{ __html: response.funderFeedback }}
+            />
+            <div className="text-end">
+              <Button
+                variant="warning"
+                size="lg"
+                onClick={() => setFeedbackResolved(true)}
+              >
+                Mark as Resolved
+              </Button>
+            </div>
           </Alert>
         )}
       </>
@@ -568,7 +583,7 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
         </Alert>
       )}
       {formMode === "FIX_MODE" && (
-        <Alert variant="warning" className="text-center">
+        <Alert variant="secondary" className="text-center">
           ⚠️ This assessment has been returned for fixes. Please review funder feedback and make necessary amendments.
         </Alert>
       )}
