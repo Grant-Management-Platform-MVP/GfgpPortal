@@ -171,7 +171,24 @@ const SharedReportsList = () => {
                         Submitted on: {new Date(report.createdAt).toLocaleDateString()}
                       </Card.Subtitle>
                       {getConsentBadge(report.consentStatus)}
-                      <Badge bg="info">Structure: {report.structure}</Badge>
+                      <Badge bg="info" className='me-2'>Structure: {report.structure}</Badge>
+                      {report.structure === 'tiered' && report.tieredLevel && (
+                        <Badge
+                          style={{
+                            backgroundColor:
+                              report.tieredLevel.toLowerCase() === 'gold'
+                                ? '#FFD700' // Gold
+                                : report.tieredLevel.toLowerCase() === 'silver'
+                                  ? '#C0C0C0' // Silver
+                                  : report.tieredLevel.toLowerCase() === 'bronze'
+                                    ? '#CD7F32' // Bronze
+                                    : '#6c757d', // Default gray
+                            color: 'black',
+                          }}
+                        >
+                          Tiered Level: {report.tieredLevel}
+                        </Badge>
+                      )}
                     </Card.Body>
                     <Card.Footer className="bg-transparent border-top-0 d-flex justify-content-end">
                       {renderConsentActions(report)}
