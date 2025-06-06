@@ -97,9 +97,22 @@ const AssessmentInvitationWizard = () => {
       toast.error('Please ensure all selections are made.');
       return;
     }
+
+    // === 🔒 Business Rule Check ===
+    const hasDoneTiered = selectedGrantee.assessments.some(a => a.structure === 'tiered');
+
+    const isAttemptingDowngrade =
+      hasDoneTiered &&
+      (structure === 'foundation' || structure === 'advanced');
+
+    if (isAttemptingDowngrade) {
+      toast.error(`This grantee has already completed a Tiered assessment and cannot be invited to Foundation or Advanced structures.`);
+      return;
+    }
+
+    // === ✅ Proceed with Invite ===
     setSending(true);
     try {
-      // Modify the payload to include tieredLevel if applicable
       const payload = {
         email: selectedGrantee.email,
         structure: structure,
@@ -119,6 +132,7 @@ const AssessmentInvitationWizard = () => {
       setSending(false);
     }
   };
+
 
   const resetWizard = () => {
     setStep(1);
