@@ -478,8 +478,8 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
         )}
         {/* Display funder feedback prominently when in FIX_MODE */}
         {formMode === "FIX_MODE" && response.funderFeedback && (
-          <Alert variant="warning" className="p-2 my-2 small">
-            <strong>Funder Feedback:</strong> {response.funderFeedback}
+          <Alert variant="info" className="p-2 my-2 h6 text-dark text-secondary">
+            <strong>Reviewer Feedback:<p className="lead text-success font-weight-bold" dangerouslySetInnerHTML={{ __html: response.funderFeedback }} /></strong>
           </Alert>
         )}
       </>
