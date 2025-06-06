@@ -21,8 +21,24 @@ const QuestionnaireEditor = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false); // Renamed to avoid clash
   const [deleteTarget, setDeleteTarget] = useState(null); // Stores info about what to delete (section, subsection, question)
   const [showPreviewModal, setShowPreviewModal] = useState(false); // For preview modal
+  const [structure, setStructure] = useState("");
+  const [tieredLevel, setTieredLevel] = useState('');
 
   const BASE_URL = import.meta.env.VITE_BASE_URL;
+    // Define the main structures.
+  const mainStructures = [
+    { id: "foundation", name: "Foundation" },
+    { id: "advanced", name: "Advanced" },
+    { id: "tiered", name: "Tiered" }
+  ];
+
+  // Define the tiered levels
+  const tieredLevelsOptions = [
+    { id: "gold", name: "Gold" },
+    { id: "silver", name: "Silver" },
+    { id: "bronze", name: "Bronze" }
+  ];
+
 
   // --- Utility Functions (Mirrored from DynamicQuestionnaireBuilder) ---
 
@@ -320,11 +336,19 @@ const QuestionnaireEditor = () => {
   };
 
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     setLoading(true);
+
+     if (structure === 'tiered' && !tieredLevel) {
+          toast.error("Please select a Tiered Level (Gold, Silver, or Bronze).");
+          setLoading(false);
+          return;
+        }
     try {
       const finalSections = recalculateSectionWeights(sections);
       const payload = {
+        tieredLevel: structure === 'tiered' ? tieredLevel : null,
         contentJson: {
           templateCode: "",
           version: "1.0",
@@ -447,19 +471,47 @@ const QuestionnaireEditor = () => {
       <h1 className="mb-4 h3">Editing Questionnaire: {questionnaireTitle}</h1>
 
       {/* Overall Questionnaire Properties */}
-      <div className="mb-3">
-        <label htmlFor="questionnaire-structure" className="form-label">Structure</label>
-        <select
-          id="questionnaire-structure"
-          className="form-select"
-          value={questionnaireStructure}
-          onChange={(e) => setQuestionnaireStructure(e.target.value)}
-        >
-          <option value="">Select structure</option>
-          <option value="foundation">Foundation</option>
-          <option value="advanced">Advanced</option>
-          <option value="tiered">Tiered</option>
-        </select>
+      <div className="card p-4 shadow-sm">
+        <h5 className="mb-3">Choose your Structure</h5>
+        <div className="mb-3">
+          <select
+            id="structureSelect"
+            className="form-select"
+            value={structure}
+            onChange={(e) => {
+              setStructure(e.target.value);
+              setTieredLevel('');
+            }}
+          >
+            <option value="">-- Choose Structure --</option>
+            {mainStructures.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Conditional rendering for Tiered sub-level selection */}
+        {structure === 'tiered' && (
+          <div className="mb-3 mt-3 p-3 border rounded bg-light">
+            <label htmlFor="tieredLevelSelect" className="form-label">Choose Tiered Level:</label>
+            <select
+              id="tieredLevelSelect"
+              className="form-select"
+              value={tieredLevel}
+              onChange={(e) => setTieredLevel(e.target.value)}
+              required
+            >
+              <option value="">-- Select Tiered Level --</option>
+              {tieredLevelsOptions.map((level) => (
+                <option key={level.id} value={level.id}>
+                  {level.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       <div className="mb-4">
