@@ -30,7 +30,7 @@ const AssessmentListPage = () => {
 
 
     const handleStartAssessment = (invite) => {
-        navigate(`/grantee/assessment-invite/${invite.id}`, {
+        navigate(`/grantee/assessment-invite/${invite.id}/${invite.tieredLevel}`, {
             state: { invite },
         });
     };

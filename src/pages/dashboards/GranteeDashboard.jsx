@@ -23,7 +23,7 @@ const GranteeDashboard = () => {
           <Route path="profile" element={<Profile />} />
           <Route path="documents" element={<DocumentRepository/>} />
           <Route path="questionnaire" element={<StartQuestionnaire/>} />
-          <Route path="assessment-invite/:inviteId" element={<AssessmentFromInvite />} />
+          <Route path="assessment-invite/:inviteId/:tieredLevel" element={<AssessmentFromInvite />} />
           <Route path="*" element={<div>404 - Route Not Found</div>} />
         </Routes>
       </div>

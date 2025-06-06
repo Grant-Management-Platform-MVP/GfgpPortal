@@ -33,6 +33,7 @@ const AssessmentFromInvite = () => {
     const user = JSON.parse(localStorage.getItem("user"));
     const userId = user?.userId;
     const FIXED_OPTIONS = ["Yes", "In-progress", "No", "Not Applicable"];
+    const { tieredLevel } = useParams(); // 'tieredLevel' from URL will be 'urlTieredLevel'
 
     useEffect(() => {
         let isMounted = true;
@@ -50,10 +51,19 @@ const AssessmentFromInvite = () => {
             setLoading(true);
             setError("");
 
+            let templateApiUrl;
+
+            // Use the structure derived from the invite (or prop) and the tieredLevel from the URL
+            if (currentInvite.structureType === 'tiered' && tieredLevel) {
+                // Send tieredLevel as a query parameter as per our backend refactor plan
+                templateApiUrl = `${BASE_URL}gfgp/questionnaire-templates/structure/${currentInvite.structureType}/${tieredLevel}`;
+            } else {
+                // For non-tiered structures (Foundation, Advanced), no tieredLevel needed
+                templateApiUrl = `${BASE_URL}gfgp/questionnaire-templates/structure/${currentInvite.structureType}`;
+            }
+
             try {
-                const templateRes = await axios.get(
-                    `${BASE_URL}gfgp/questionnaire-templates/structure/${currentInvite.structureType}`
-                );
+                const templateRes = await axios.get(templateApiUrl);
                 const [templateObj] = templateRes.data;
                 if (!templateObj || !templateObj.content)
                     throw new Error("Template content missing.");
