@@ -202,6 +202,7 @@ const AssessmentFromInvite = () => {
             const submissionPayload = {
                 userId,
                 structure: template.structureType,
+                tieredLevel: template.structureType === 'tiered' ? tieredLevel : null, // Send null for non-tiered
                 version: template.version,
                 answers: structuredAnswers,
             };

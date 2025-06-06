@@ -286,6 +286,7 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
       const submissionPayload = {
         userId,
         structure,
+        tieredLevel: structure === 'tiered' ? template.tieredLevel : null,
         version: template.version,
         answers: structuredAnswers,
       };
