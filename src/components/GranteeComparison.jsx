@@ -22,7 +22,22 @@ const GranteeComparison = () => {
   const [chartType, setChartType] = useState('bar');
 
   const fetchTemplate = async (structure) => {
-    const res = await axios.get(`${BASE_URL}gfgp/questionnaire-templates/structure/${structure}`);
+    let templateApiUrl;
+    let tieredLevel = null;
+
+    if (structure === 'tiered') {
+      tieredLevel = localStorage.getItem('gfgpTieredLevel'); // This should be 'gold', 'silver', etc.
+      console.log('tieredLevel', tieredLevel);
+    }
+
+    if (structure === 'tiered' && tieredLevel) {
+      templateApiUrl = `${BASE_URL}gfgp/questionnaire-templates/structure/${structure}/${tieredLevel}`;
+    } else {
+      // For non-tiered structures (Foundation, Advanced), no tieredLevel needed
+      templateApiUrl = `${BASE_URL}gfgp/questionnaire-templates/structure/${structure}`;
+    }
+
+    const res = await axios.get(templateApiUrl);
     const tmpl = res.data[0];
     const parsedContent = typeof tmpl.content === 'string' ? JSON.parse(tmpl.content) : tmpl.content;
     return {
