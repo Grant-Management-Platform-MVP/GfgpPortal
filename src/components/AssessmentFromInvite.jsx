@@ -139,6 +139,13 @@ const AssessmentFromInvite = () => {
                     })
                 ),
             });
+            // 2. Make API call to update invite status to active=false
+            // Ensure inviteId is available from useParams()
+            if (inviteId) {
+                await axios.put(`${BASE_URL}gfgp/invites/${inviteId}/status`);
+            } else {
+                console.warn("Invite ID missing, cannot deactivate invitation.");
+            }
             setLastSaved(new Date());
             toast.success("Draft saved!");
             navigate('/grantee/assessments');
@@ -216,6 +223,11 @@ const AssessmentFromInvite = () => {
                 submissionPayload
             );
             toast.success("Assessment submitted successfully!");
+            if (inviteId) {
+                await axios.put(`${BASE_URL}gfgp/invites/${inviteId}/status`);
+            } else {
+                console.warn("Invite ID missing, cannot deactivate invitation.");
+            }
             setSubmitted(true);
             navigate('/grantee/')
             const freshRes = await axios.get(
