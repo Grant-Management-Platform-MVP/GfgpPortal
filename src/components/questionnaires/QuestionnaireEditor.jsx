@@ -25,7 +25,7 @@ const QuestionnaireEditor = () => {
   const [tieredLevel, setTieredLevel] = useState('');
 
   const BASE_URL = import.meta.env.VITE_BASE_URL;
-    // Define the main structures.
+  // Define the main structures.
   const mainStructures = [
     { id: "foundation", name: "Foundation" },
     { id: "advanced", name: "Advanced" },
@@ -152,6 +152,18 @@ const QuestionnaireEditor = () => {
 
         // Set the main state variables
         setQuestionnaireTitle(templateObj.title || "");
+
+        if (templateObj.structureType) {
+          setStructure(templateObj.structureType);
+        } else {
+          setStructure('');
+        }
+
+        if (templateObj.structureType === 'tiered' && templateObj.tieredLevel) {
+          setTieredLevel(templateObj.tieredLevel);
+        } else {
+          setTieredLevel('');
+        }
         setQuestionnaireStructure(templateObj.structure || "");
         // Recalculate weights immediately after loading and normalizing
         setSections(recalculateSectionWeights(normalizedSections));
@@ -340,14 +352,16 @@ const QuestionnaireEditor = () => {
     e.preventDefault();
     setLoading(true);
 
-     if (structure === 'tiered' && !tieredLevel) {
-          toast.error("Please select a Tiered Level (Gold, Silver, or Bronze).");
-          setLoading(false);
-          return;
-        }
+    if (structure === 'tiered' && !tieredLevel) {
+      toast.error("Please select a Tiered Level (Gold, Silver, or Bronze).");
+      setLoading(false);
+      return;
+    }
     try {
       const finalSections = recalculateSectionWeights(sections);
       const payload = {
+        structure,
+        questionnaireTitle,
         tieredLevel: structure === 'tiered' ? tieredLevel : null,
         contentJson: {
           templateCode: "",
