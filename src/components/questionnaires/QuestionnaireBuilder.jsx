@@ -32,6 +32,7 @@ const DynamicQuestionnaireBuilder = () => {
 
   // Define the tiered levels
   const tieredLevelsOptions = [
+    { id: "platinum", name: "Platinum" },
     { id: "gold", name: "Gold" },
     { id: "silver", name: "Silver" },
     { id: "bronze", name: "Bronze" }
