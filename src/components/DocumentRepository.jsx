@@ -93,7 +93,16 @@ export default function GranteeFiles() {
     setError(null);
     try {
       const response = await axios.get(`${BASE_URL}gfgp/documents/${currentUserId}/files`);
-      setFiles(response.data);
+
+      const uniqueFilesMap = new Map();
+      for (const file of response.data) {
+        if (!uniqueFilesMap.has(file.filename)) {
+          uniqueFilesMap.set(file.filename, file);
+        }
+      }
+      const uniqueFiles = Array.from(uniqueFilesMap.values());
+
+      setFiles(uniqueFiles);
     } catch (err) {
       console.error("Error fetching files:", err);
       setError("Failed to load files. Please try again later.");
