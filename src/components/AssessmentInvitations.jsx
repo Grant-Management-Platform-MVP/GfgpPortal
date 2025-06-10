@@ -107,7 +107,7 @@ const AssessmentInvitationWizard = () => {
       (structure === 'foundation' || structure === 'advanced');
 
     if (isAttemptingDowngrade) {
-      toast.error(`This grantee has already completed a Tiered assessment and cannot be invited to Foundation or Advanced structures.`);
+      toast.error(`This grantee is already enrolled in a Tiered GFGP structure and cannot be invited to Foundation or Advanced structures.`);
       return;
     }
 
