@@ -305,10 +305,10 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
       return;
     }
 
-    if (!hasInteracted && formMode === "EDIT_DRAFT") {
-      toast.warn("Please interact with the form before submitting.");
-      return;
-    }
+    // if (!hasInteracted && formMode === "EDIT_DRAFT") {
+    //   toast.warn("Please interact with the form before submitting.");
+    //   return;
+    // }
 
     try {
 
