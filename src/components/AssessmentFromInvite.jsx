@@ -34,6 +34,7 @@ const AssessmentFromInvite = () => {
     const userId = user?.userId;
     const FIXED_OPTIONS = ["Yes", "In-progress", "No", "Not Applicable"];
     const { tieredLevel } = useParams(); // 'tieredLevel' from URL will be 'urlTieredLevel'
+    const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
 
     useEffect(() => {
         let isMounted = true;
@@ -127,6 +128,8 @@ const AssessmentFromInvite = () => {
         try {
             await axios.post(`${BASE_URL}gfgp/assessment-responses/save`, {
                 userId,
+                structure: currentInvite.structureType,
+                tieredLevel: currentInvite.structureType === 'tiered' ? tieredLevel : null,
                 templateCode: template.templateCode,
                 version: template.version,
                 answers: Object.fromEntries(
@@ -138,6 +141,7 @@ const AssessmentFromInvite = () => {
             });
             setLastSaved(new Date());
             toast.success("Draft saved!");
+            navigate('/grantee/assessments');
         } catch (err) {
             console.error("Failed to save draft", err);
             toast.error("Failed to save draft.");
@@ -181,10 +185,10 @@ const AssessmentFromInvite = () => {
     const handleSubmit = async (e) => {
         e?.preventDefault();
 
-        if (!hasInteracted) {
-            toast.warn("Please interact with the form before submitting.");
-            return;
-        }
+        // if (!hasInteracted) {
+        //     toast.warn("Please interact with the form before submitting.");
+        //     return;
+        // }
 
         try {
             const answersForSubmission = Object.fromEntries(
@@ -404,6 +408,27 @@ const AssessmentFromInvite = () => {
             ? Math.round((answeredCount / allVisibleQuestions.length) * 100)
             : 100;
 
+    // --- Wizard Navigation Logic ---
+    const totalSections = template.sections.length;
+    const isFirstSection = currentSectionIndex === 0;
+    const isLastSection = currentSectionIndex === totalSections - 1;
+
+    const handleNextSection = () => {
+        if (!isLastSection) {
+            setCurrentSectionIndex(prevIndex => prevIndex + 1);
+            window.scrollTo(0, 0); // Scroll to top on section change
+        }
+    };
+
+    const handlePreviousSection = () => {
+        if (!isFirstSection) {
+            setCurrentSectionIndex(prevIndex => prevIndex - 1);
+            window.scrollTo(0, 0); // Scroll to top on section change
+        }
+    };
+
+    const currentSection = template.sections[currentSectionIndex];
+
     return (
         <Container className="py-4">
             <Card className="mb-4 shadow-sm">
@@ -460,59 +485,59 @@ const AssessmentFromInvite = () => {
 
             <Form onSubmit={handleSubmit}>
                 <fieldset>
-                    {template.sections.map((section) => (
-                        <Card key={section.sectionId} className="mb-4 shadow-sm">
-                            <Card.Body>
-                                <h5 className="text-primary">{section.title}</h5>
-                                {section.description && (
-                                    <p
-                                        className="text-muted"
-                                        dangerouslySetInnerHTML={{ __html: section.description }}
-                                    />
-                                )}
-                                {section.subsections?.map((subsection) => (
-                                    <div
-                                        key={subsection.subsectionId}
-                                        className="mb-3 ps-3 border-start"
-                                    >
-                                        <h6 className="text-secondary">{subsection.title}</h6>
-                                        {subsection.description && (
-                                            <p
-                                                className="text-muted"
-                                                dangerouslySetInnerHTML={{
-                                                    __html: subsection.description,
-                                                }}
-                                            />
-                                        )}
-                                        {subsection.questions?.map(
-                                            (q) =>
-                                                shouldShowQuestion(q) && (
-                                                    <Form.Group key={q.id} className="mb-4">
-                                                        <Form.Label className="fw-semibold fs-6 d-inline-flex align-items-center gap-1">
-                                                            <span
-                                                                dangerouslySetInnerHTML={{
-                                                                    __html: q.questionText,
-                                                                }}
-                                                            />
-                                                            {q.required && (
-                                                                <span className="text-danger">*</span>
-                                                            )}
-                                                        </Form.Label>
-                                                        {q.guidance && (
-                                                            <div
-                                                                className="text-muted small mt-2"
-                                                                dangerouslySetInnerHTML={{ __html: q.guidance }}
-                                                            />
+
+                    <Card key={currentSection.sectionId} className="mb-4 shadow-sm">
+                        <Card.Body>
+                            <h5 className="text-primary">{currentSection.title}</h5>
+                            {currentSection.description && (
+                                <p
+                                    className="text-muted"
+                                    dangerouslySetInnerHTML={{ __html: currentSection.description }}
+                                />
+                            )}
+                            {currentSection.subsections?.map((subsection) => (
+                                <div
+                                    key={subsection.subsectionId}
+                                    className="mb-3 ps-3 border-start"
+                                >
+                                    <h6 className="text-secondary">{subsection.title}</h6>
+                                    {subsection.description && (
+                                        <p
+                                            className="text-muted"
+                                            dangerouslySetInnerHTML={{
+                                                __html: subsection.description,
+                                            }}
+                                        />
+                                    )}
+                                    {subsection.questions?.map(
+                                        (q) =>
+                                            shouldShowQuestion(q) && (
+                                                <Form.Group key={q.id} className="mb-4">
+                                                    <Form.Label className="fw-semibold fs-6 d-inline-flex align-items-center gap-1">
+                                                        <span
+                                                            dangerouslySetInnerHTML={{
+                                                                __html: q.questionText,
+                                                            }}
+                                                        />
+                                                        {q.required && (
+                                                            <span className="text-danger">*</span>
                                                         )}
-                                                        {renderInput(q)}
-                                                    </Form.Group>
-                                                )
-                                        )}
-                                    </div>
-                                ))}
-                            </Card.Body>
-                        </Card>
-                    ))}
+                                                    </Form.Label>
+                                                    {q.guidance && (
+                                                        <div
+                                                            className="text-muted small mt-2"
+                                                            dangerouslySetInnerHTML={{ __html: q.guidance }}
+                                                        />
+                                                    )}
+                                                    {renderInput(q)}
+                                                </Form.Group>
+                                            )
+                                    )}
+                                </div>
+                            ))}
+                        </Card.Body>
+                    </Card>
+
                 </fieldset>
 
                 {saving && <p className="text-info">💾 Saving your draft...</p>}
@@ -520,8 +545,27 @@ const AssessmentFromInvite = () => {
                     <Alert variant="success">🎉 Assesement submitted successfully!</Alert>
                 )}
 
-                <div className="text-end d-grid gap-2">
+                <div className="d-flex justify-content-between align-items-center mt-4">
                     <Button
+                        variant="secondary"
+                        size="lg"
+                        onClick={handlePreviousSection}
+                        disabled={isFirstSection}
+                    >
+                        Previous
+                    </Button>
+
+                    {!isLastSection && (
+                        <Button
+                            variant="primary"
+                            size="lg"
+                            onClick={handleNextSection}
+                        >
+                            Next
+                        </Button>
+                    )}
+
+                    {isLastSection && (<Button
                         type="submit"
                         variant="success"
                         size="lg"
@@ -529,6 +573,7 @@ const AssessmentFromInvite = () => {
                     >
                         {saving ? "Saving..." : "Submit"}
                     </Button>
+                    )}
                 </div>
             </Form>
         </Container>

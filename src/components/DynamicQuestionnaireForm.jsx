@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Spinner, Container, ProgressBar, Card, Form, Button, Alert } from "react-bootstrap";
 import { toast } from 'react-toastify';
-// import { useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
   const [template, setTemplate] = useState(null);
@@ -19,6 +19,7 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
   const [canSubmit, setCanSubmit] = useState(true);
   const [feedbackResolved, setFeedbackResolved] = useState(false);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
+  const navigate = useNavigate();
 
 
   const BASE_URL = import.meta.env.VITE_BASE_URL;
@@ -68,37 +69,34 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
     if (formMode !== 'VIEW_ONLY') {
       setCanSubmit(true);
     }
-  }, [answers]);
+  }, [answers, formMode]);
 
 
   useEffect(() => {
     let isMounted = true;
-
-    if (!userId || !structure) {
-      if (isMounted) {
-        setError("Missing user or questionnaire structure. Please ensure you are logged in and have selected a questionnaire.");
-        setLoading(false);
+    const fetchTemplateAndAnswers = async () => {
+      if (!userId || !structure) {
+        if (isMounted) {
+          setError("Missing user or questionnaire structure. Please ensure you are logged in and have selected a questionnaire.");
+          setLoading(false);
+        }
+        return;
       }
-      return;
-    }
 
-    const fetchData = async () => {
       try {
         setLoading(true);
 
+        // 1. Fetch Template First
         let templateApiUrl;
         let tieredLevel = null;
 
         if (structure === 'tiered') {
-          tieredLevel = localStorage.getItem('gfgpTieredLevel'); // This should be 'gold', 'silver', etc.
-          console.log('tieredLevel', tieredLevel);
+          tieredLevel = localStorage.getItem('gfgpTieredLevel');
         }
 
         if (structure === 'tiered' && tieredLevel) {
-          // Send tieredLevel as a query parameter as per our backend refactor plan
           templateApiUrl = `${BASE_URL}gfgp/questionnaire-templates/structure/${structure}/${tieredLevel}`;
         } else {
-          // For non-tiered structures (Foundation, Advanced), no tieredLevel needed
           templateApiUrl = `${BASE_URL}gfgp/questionnaire-templates/structure/${structure}`;
         }
         const templateRes = await axios.get(templateApiUrl);
@@ -115,42 +113,113 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
           });
         }
 
+        // 2. Then, try to fetch Submission or Draft
+        let initialAnswers = {};
+        let initialSubmissionStatus = null;
+        let initialSubmissionId = null;
+        let derivedFormMode = "EDIT_DRAFT"; // Default mode
+
+        // First attempt: Check for a full submission (SUBMITTED, SENT_BACK)
         try {
           const submissionRes = await axios.get(`${BASE_URL}gfgp/assessment-submissions/${userId}/${structure}`);
           const submissionData = submissionRes.data[0];
 
-          if (!submissionData) {
-            // No submission found - try loading draft or start fresh
-            if (isMounted) {
-              await fetchDraftData(isMounted);
-            }
-            return; // exit so no crash happens below
-          }
+          if (isMounted && submissionData) {
+            const status = submissionData.status?.toUpperCase();
+            initialSubmissionStatus = status;
+            initialSubmissionId = submissionData.id;
 
-          const status = submissionData.status?.toUpperCase();
-          if (isMounted) {
-            setAnswers(normalizeIncomingAnswers(submissionData.answers));
-            setSubmissionStatus(status);
-            setSubmissionId(submissionData.id);
-            if (status === "SENT_BACK") {
-              setFormMode("FIX_MODE");
-              console.log("Submission status is SENT_BACK. Setting formMode to FIX_MODE.");
-            } else if (status === "SUBMITTED") {
-              setFormMode("VIEW_ONLY");
-              console.log("Submission status is SUBMITTED. Setting formMode to VIEW_ONLY.");
-            } else {
-              setFormMode("EDIT_DRAFT");
+            if (status === "SENT_BACK" || status === "SUBMITTED") {
+              initialAnswers = normalizeIncomingAnswers(submissionData.answers);
+              if (status === "SENT_BACK") {
+                derivedFormMode = "FIX_MODE";
+                console.log("Submission status is SENT_BACK. Derived mode: FIX_MODE.");
+              } else if (status === "SUBMITTED") {
+                derivedFormMode = "VIEW_ONLY";
+                console.log("Submission status is SUBMITTED. Derived mode: VIEW_ONLY.");
+              }
+            } else if (status === "SAVED") {
+              const rawAnswersString = submissionData.answers;
+              if (rawAnswersString) {
+                try {
+                  initialAnswers = JSON.parse(rawAnswersString);
+                  console.log("Parsed SAVED submission answers:", initialAnswers);
+                } catch (parseError) {
+                  console.error("Failed to parse rawAnswersString from SAVED submission:", parseError, rawAnswersString);
+                  initialAnswers = {};
+                }
+              }
+              derivedFormMode = "EDIT_DRAFT";
               console.log(`Submission status is ${status}. Defaulting formMode to EDIT_DRAFT.`);
             }
           }
         } catch (submissionErr) {
-          console.warn("No existing submission found (or error fetching submission). Checking for draft.");
-          if (axios.isAxiosError(submissionErr) && submissionErr.response?.status === 404) {
-            await fetchDraftData(isMounted);
-          } else {
-            console.error("Error fetching submission status:", submissionErr);
-            if (isMounted) setError(`Failed to load submission data: ${submissionErr.response?.data?.message || submissionErr.message}`);
+          console.warn("No existing submission found or error fetching submission (this is normal if no submission exists):", submissionErr);
+        }
+
+        if (Object.keys(initialAnswers).length === 0 && derivedFormMode === "EDIT_DRAFT") {
+          try {
+            const draftRes = await axios.get(`${BASE_URL}gfgp/assessment-responses/${userId}/${structure}`);
+            if (isMounted && draftRes.data && draftRes.data.answers) {
+              console.log("Draft response found:", draftRes.data);
+              const rawAnswersString = draftRes.data.answers;
+              if (rawAnswersString) {
+                try {
+                  // Parse the JSON string from the draft; this will be the flat object.
+                  initialAnswers = JSON.parse(rawAnswersString);
+                  console.log("Parsed draft answers from assessment-responses:", initialAnswers);
+                } catch (parseError) {
+                  console.error("Failed to parse rawAnswersString from draft (assessment-responses):", parseError, rawAnswersString);
+                  initialAnswers = {};
+                }
+              } else {
+                console.warn("Draft response's 'answers' field is empty or null from assessment-responses.");
+                initialAnswers = {};
+              }
+              derivedFormMode = "EDIT_DRAFT"; // Drafts are always editable
+              initialSubmissionStatus = draftRes.data.status?.toUpperCase(); // Should be "SAVED"
+              initialSubmissionId = draftRes.data.id;
+              console.log("Draft data loaded. Setting formMode to EDIT_DRAFT.");
+            } else if (isMounted) {
+              console.warn("No draft found in assessment-responses or data is empty — starting fresh.");
+              initialAnswers = {};
+              derivedFormMode = "EDIT_DRAFT";
+            }
+          } catch (draftErr) {
+            console.warn("Error fetching draft from assessment-responses:", draftErr);
+            if (axios.isAxiosError(draftErr) && draftErr.response?.status === 404) {
+              if (isMounted) {
+                initialAnswers = {};
+                derivedFormMode = "EDIT_DRAFT";
+                console.log("No draft found (404) in assessment-responses. Starting fresh.");
+              }
+            } else {
+              console.error("Unexpected error fetching draft from assessment-responses:", draftErr);
+              if (isMounted) setError(`Failed to load draft data: ${draftErr.response?.data?.message || draftErr.message}`);
+            }
           }
+        }
+
+        let finalFormMode = derivedFormMode; // Start with the mode derived from fetched data
+
+        // If a 'mode' prop is explicitly provided, it takes precedence.
+        // Convert it to uppercase for consistent comparison with internal states.
+        if (mode) {
+          const normalizedModeProp = mode.toUpperCase();
+          if (normalizedModeProp === "EDIT") {
+            finalFormMode = "EDIT_DRAFT";
+          } else if (normalizedModeProp === "VIEW") {
+            finalFormMode = "VIEW_ONLY";
+          } else if (normalizedModeProp === "FIX") {
+            finalFormMode = "FIX_MODE";
+          }
+        }
+
+        if (isMounted) {
+          setAnswers(initialAnswers);
+          setSubmissionStatus(initialSubmissionStatus);
+          setSubmissionId(initialSubmissionId);
+          setFormMode(finalFormMode)
         }
 
       } catch (err) {
@@ -161,66 +230,12 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
       }
     };
 
-    const fetchDraftData = async (isMountedFlag) => {
-      try {
-        const draftRes = await axios.get(`${BASE_URL}gfgp/assessment-responses/${userId}/${structure}`);
-        if (isMountedFlag) {
-          if (draftRes.data) {
-            console.log("Draft response found:", draftRes.data);
-            const rawAnswers = draftRes.data.answers || {};
-            const parsedAnswers = typeof rawAnswers === "string" ? JSON.parse(rawAnswers) : rawAnswers;
-            const normalizedDraft = {};
-            for (const [qid, value] of Object.entries(parsedAnswers)) {
-              normalizedDraft[qid] = typeof value === "object" ? value : { answer: value !== undefined && value !== null ? String(value) : "" };
-            }
-            setAnswers(normalizedDraft);
-            setSubmissionStatus(null);
-            setFormMode("EDIT_DRAFT");
-            console.log("Draft data loaded. Setting formMode to EDIT_DRAFT.");
-          } else {
-            console.warn("Draft response is null — starting fresh.");
-            setAnswers({});
-            setFormMode("EDIT_DRAFT");
-          }
-        }
-      } catch (draftErr) {
-        console.warn("No draft found or error fetching draft:", draftErr);
-        if (axios.isAxiosError(draftErr) && draftErr.response?.status === 404) {
-          if (isMountedFlag) {
-            setAnswers({});
-            setSubmissionStatus(null);
-            setFormMode("EDIT_DRAFT");
-            console.log("No draft found (404). Starting fresh in EDIT_DRAFT mode.");
-          }
-        } else {
-          console.error("Unexpected error fetching draft:", draftErr);
-          if (isMountedFlag) setError(`Failed to load draft data: ${draftErr.response?.data?.message || draftErr.message}`);
-        }
-      }
-    };
-
-    fetchData();
+    fetchTemplateAndAnswers();
 
     return () => {
       isMounted = false;
     };
-  }, [userId, structure, BASE_URL]);
-
-  useEffect(() => {
-    if (mode === "view") {
-      setFormMode("VIEW_ONLY");
-    } else if (mode === "fix") {
-      setFormMode("FIX_MODE");
-    } else if (submissionStatus === "SENT_BACK") {
-      setFormMode("FIX_MODE");
-    } else if (submissionStatus === "SUBMITTED") {
-      setFormMode("VIEW_ONLY");
-    } else {
-      setFormMode("EDIT_DRAFT");
-    }
-  }, [mode, submissionStatus]);
-
-
+  }, [userId, structure, BASE_URL, mode]);
 
   useEffect(() => {
     if (!template || !hasInteracted || formMode === "VIEW_ONLY") return;
@@ -256,6 +271,7 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
       });
       setLastSaved(new Date());
       toast.success("Draft saved!");
+      navigate('/grantee/assessments');
       setCanSubmit(false);
     } catch (err) {
       console.error("Failed to save draft", err);
