@@ -114,7 +114,7 @@ const AssessmentListPage = () => {
                 <Alert variant="info" className="text-center">
                     No assessments found yet.<br />
                     To get started, you'll need to first select your preffered assessment structure (Foundation, Advanced, or Tiered).<br />
-                    Once you've <Button variant="link" onClick={() => navigate('/grantee/select-structure')}>made a selection</Button>, you can begin your first assessment.
+                    Once you've<Button variant="link" onClick={() => navigate('/grantee/select-structure')}>made a selection</Button>you can begin your first assessment.
                     <div className="mt-2">
                         <Button variant="link" onClick={() => navigate('/grantee/questionnaire')}>
                             Start your first assessment

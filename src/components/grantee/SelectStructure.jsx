@@ -7,6 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 // Define the Tiered levels
 const TIERED_LEVEL_OPTIONS = [
+  { id: 'platinum', title: 'Platinum', description: 'Exceptional controls for highly regulated or critical organizations demanding the highest level of security and resilience with minimal risk tolerance.' },
   { id: 'gold', title: 'Gold', description: 'Comprehensive controls for large, complex organizations with high-risk profiles.' },
   { id: 'silver', title: 'Silver', description: 'Balanced controls for medium-sized organizations with moderate complexity and risk.' },
   { id: 'bronze', title: 'Bronze', description: 'Streamlined controls for smaller organizations with lower complexity and risk.' },
