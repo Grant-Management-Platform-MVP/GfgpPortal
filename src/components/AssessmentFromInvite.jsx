@@ -362,12 +362,12 @@ const AssessmentFromInvite = () => {
                         {response.evidence && (
                             <div className="mt-2">
                                 <a
-                                    href={response.evidence}
+                                    href={`${BASE_URL.replace(/\/+$/, "")}${response.evidence}`}
                                     target="_blank"
-                                    rel="noreferrer"
+                                    rel="noopener noreferrer"
                                     className="text-decoration-underline"
                                 >
-                                    View uploaded evidence
+                                    View uploaded Evidence
                                 </a>
                             </div>
                         )}
