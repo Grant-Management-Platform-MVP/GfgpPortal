@@ -412,7 +412,7 @@ const QuestionnaireEditor = () => {
               <h6 className="text-lg font-medium mb-1">
                 {i + 1}. {s.title} (Section Units: {s.weight})
               </h6>
-              <p className="text-gray-600 mb-2">{s.description}</p>
+              <p className="text-gray-600 mb-2" dangerouslySetInnerHTML={{ __html: s.description }}/>
 
               {(s.subsections || []).length > 0 && (
                 <p className="ps-3 text-gray-700">
@@ -429,12 +429,12 @@ const QuestionnaireEditor = () => {
                   <h6 className="text-md font-medium mb-1">
                     {`${i + 1}.${subIndex + 1} ${sub.title} (Subsection Units: ${sub.weight})`}
                   </h6>
-                  <p className="text-gray-600 mb-2">{sub.description}</p>
+                  <p className="text-gray-600 mb-2" dangerouslySetInnerHTML={{ __html: sub.description }}/>
                   <ul className="list-disc list-inside text-sm text-gray-800">
                     {(sub.questions || []).map((q) => (
                       <li key={q.id} className="mb-1">
-                        <strong>{q.questionText}</strong> (Code: {q.questionCode}, Type: {q.type}, Units: {q.weight})<br />
-                        {q.guidance && <small className="text-gray-500"><em>Guidance: {q.guidance}</em></small>}<br />
+                        <strong dangerouslySetInnerHTML={{ __html: q.questionText }} /> (Code: {q.questionCode}, Type: {q.type}, Units: {q.weight})<br />
+                        {q.guidance && <small className="text-gray-500"><em>Guidance: <span dangerouslySetInnerHTML={{ __html: q.guidance }} /></em></small>}<br />
                         {q.options?.length > 0 && (
                           <div className="flex flex-wrap gap-1 text-xs text-blue-700 mt-1">
                             Options: {q.options.map((opt, optIndex) => (
