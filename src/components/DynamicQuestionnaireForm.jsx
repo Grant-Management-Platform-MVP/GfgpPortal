@@ -18,6 +18,7 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
   const [lastSaved, setLastSaved] = useState(null);
   const [canSubmit, setCanSubmit] = useState(true);
   const [feedbackResolved, setFeedbackResolved] = useState(false);
+  const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
 
 
   const BASE_URL = import.meta.env.VITE_BASE_URL;
@@ -539,12 +540,37 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
 
   const progress = allVisibleQuestions.length > 0 ? Math.round((answeredCount / allVisibleQuestions.length) * 100) : 100;
 
+  // --- Wizard Navigation Logic ---
+  const totalSections = template.sections.length;
+  const isFirstSection = currentSectionIndex === 0;
+  const isLastSection = currentSectionIndex === totalSections - 1;
+
+  const handleNextSection = () => {
+    if (!isLastSection) {
+      setCurrentSectionIndex(prevIndex => prevIndex + 1);
+      window.scrollTo(0, 0); // Scroll to top on section change
+    }
+  };
+
+  const handlePreviousSection = () => {
+    if (!isFirstSection) {
+      setCurrentSectionIndex(prevIndex => prevIndex - 1);
+      window.scrollTo(0, 0); // Scroll to top on section change
+    }
+  };
+
+  const currentSection = template.sections[currentSectionIndex];
+
   return (
     <Container className="py-4">
       <Card className="mb-4 shadow-sm">
         <Card.Body>
           <h2 className="mb-0">{template.title}</h2>
           <small className="text-muted">Version: {template.version}</small>
+          {/* Display current section progress */}
+          <p className="mt-2 mb-0">
+            Section {currentSectionIndex + 1} of {totalSections}: {currentSection.title}
+          </p>
         </Card.Body>
         <ProgressBar now={progress} label={`${progress}% completed`} />
       </Card>
@@ -593,48 +619,67 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
 
       <Form onSubmit={handleSubmit}>
         <fieldset disabled={formMode === "VIEW_ONLY"}>
-          {template.sections.map(section => (
-            <Card key={section.sectionId} className="mb-4 shadow-sm">
-              <Card.Body>
-                <h5 className="text-primary">{section.title}</h5>
-                {section.description && (
-                  <p
-                    className="text-muted"
-                    dangerouslySetInnerHTML={{ __html: section.description }}
-                  />
-                )}
-                {section.subsections?.map(subsection => (
-                  <div key={subsection.subsectionId} className="mb-3 ps-3 border-start">
-                    <h6 className="text-secondary">{subsection.title}</h6>
-                    {subsection.description && (
-                      <p
-                        className="text-muted"
-                        dangerouslySetInnerHTML={{ __html: subsection.description }}
-                      />
-                    )}
-                    {subsection.questions?.map(q => (
-                      shouldShowQuestion(q) && (
-                        <Form.Group key={q.id} className="mb-4">
-                          <Form.Label className="fw-semibold fs-6 d-inline-flex align-items-center gap-1">
-                            <span dangerouslySetInnerHTML={{ __html: q.questionText }} />
-                            {q.required}
-                          </Form.Label>
-                          {q.guidance && (
-                            <div className="text-muted small mt-2" dangerouslySetInnerHTML={{ __html: q.guidance }} />
-                          )}
-                          {renderInput(q)}
-                        </Form.Group>
-                      )
-                    ))}
-                  </div>
-                ))}
-              </Card.Body>
-            </Card>
-          ))}
+          {/* Only render the current section */}
+          <Card key={currentSection.sectionId} className="mb-4 shadow-sm">
+            <Card.Body>
+              <h5 className="text-primary">{currentSection.title}</h5>
+              {currentSection.description && (
+                <p
+                  className="text-muted"
+                  dangerouslySetInnerHTML={{ __html: currentSection.description }}
+                />
+              )}
+              {currentSection.subsections?.map(subsection => (
+                <div key={subsection.subsectionId} className="mb-3 ps-3 border-start">
+                  <h6 className="text-secondary">{subsection.title}</h6>
+                  {subsection.description && (
+                    <p
+                      className="text-muted"
+                      dangerouslySetInnerHTML={{ __html: subsection.description }}
+                    />
+                  )}
+                  {subsection.questions?.map(q => (
+                    shouldShowQuestion(q) && (
+                      <Form.Group key={q.id} className="mb-4">
+                        <Form.Label className="fw-semibold fs-6 d-inline-flex align-items-center gap-1">
+                          <span dangerouslySetInnerHTML={{ __html: q.questionText }} />
+                          {q.required}
+                        </Form.Label>
+                        {q.guidance && (
+                          <div className="text-muted small mt-2" dangerouslySetInnerHTML={{ __html: q.guidance }} />
+                        )}
+                        {renderInput(q)}
+                      </Form.Group>
+                    )
+                  ))}
+                </div>
+              ))}
+            </Card.Body>
+          </Card>
         </fieldset>
 
-        <div className="text-end d-grid gap-2">
-          {formMode !== "VIEW_ONLY" && (
+        <div className="d-flex justify-content-between align-items-center mt-4">
+          <Button
+            variant="secondary"
+            size="lg"
+            onClick={handlePreviousSection}
+            disabled={isFirstSection || formMode === "VIEW_ONLY"}
+          >
+            Previous
+          </Button>
+
+          {!isLastSection && (
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={handleNextSection}
+              disabled={formMode === "VIEW_ONLY"}
+            >
+              Next
+            </Button>
+          )}
+
+          {isLastSection && formMode !== "VIEW_ONLY" && (
             <Button type="submit" variant="success" size="lg" disabled={saving || !canSubmit}>
               {formMode === "FIX_MODE" ? "Amend & Resubmit" : "Submit"}
             </Button>
