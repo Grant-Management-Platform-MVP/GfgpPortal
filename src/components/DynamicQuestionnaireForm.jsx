@@ -488,8 +488,13 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
             />
             {response.evidence && (
               <div className="mt-2">
-                <a href={response.evidence} target="_blank" rel="noreferrer" className="text-decoration-underline">
-                  View uploaded evidence
+                <a
+                  href={`${BASE_URL.replace(/\/+$/, "")}${response.evidence}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-decoration-underline"
+                >
+                  View uploaded Evidence
                 </a>
               </div>
             )}
