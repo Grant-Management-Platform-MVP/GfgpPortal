@@ -27,6 +27,7 @@ const AssessmentListPage = () => {
     const user = JSON.parse(localStorage.getItem("user"));
     const userId = user?.userId;
     const [invitesData, setInvitesData] = useState([]);
+    const [hasTieredAssessments, setHasTieredAssessments] = useState(false);
 
 
     const handleStartAssessment = (invite) => {
@@ -57,6 +58,8 @@ const AssessmentListPage = () => {
             try {
                 const res = await axios.get(`${BASE_URL}gfgp/assessment/${userId}`);
                 setAssessments(res.data);
+                const anyTiered = res.data.some(a => a.structure === 'tiered');
+                setHasTieredAssessments(anyTiered);
             } catch (err) {
                 setError('Failed to load assessments.', err);
             } finally {
@@ -129,6 +132,7 @@ const AssessmentListPage = () => {
                         <tr>
                             <th>#</th>
                             <th>Structure</th>
+                            {hasTieredAssessments && <th>Tiered Level</th>} {/* CONDITIONAL HEADER */}
                             <th>Version</th>
                             <th>Status</th>
                             <th>Last Updated</th>
@@ -152,6 +156,11 @@ const AssessmentListPage = () => {
                                 >
                                     <td>{idx + 1}</td>
                                     <td>{a.structure}</td>
+                                    {hasTieredAssessments && ( // CONDITIONAL CELL
+                                        <td>
+                                            {a.structure === 'tiered' ? (a.tieredLevel || '-') : '-'}
+                                        </td>
+                                    )}
                                     <td>{a.version}</td>
                                     <td>
                                         <OverlayTrigger
