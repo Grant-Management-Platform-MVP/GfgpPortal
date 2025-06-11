@@ -9,8 +9,8 @@ const STATUS_MAP = {
   'No Response': '—',
 };
 
-const SectionComparisonTable = ({ template, grantees, granteeAnswers }) => {
-  if (!template?.sections) return <p>No template data available.</p>;
+const SectionComparisonTable = ({ template, grantees, granteeAnswers, selectedGranteesTemplates }) => {
+  if (!template?.sections) return <p>No template data available to structure the comparison.</p>;
 
   return (
     <>
@@ -32,16 +32,31 @@ const SectionComparisonTable = ({ template, grantees, granteeAnswers }) => {
                 </tr>
               </thead>
               <tbody>
-                {/* CORRECTED: Flatten questions from all subsections within this section */}
                 {(section.subsections || [])
                   .flatMap(subsection => subsection.questions || [])
                   .map((q) => (
                     <tr key={q.id}>
-                      <td dangerouslySetInnerHTML={{ __html: q.questionText }}/>
+                      {/* Display question text from the reference template */}
+                      <td dangerouslySetInnerHTML={{ __html: q.questionText }} />
                       {grantees.map((g) => {
-                        const response = granteeAnswers[g.id]?.[q.id];
-                        // Use STATUS_MAP for consistent labels, default to 'No Response' (or '—')
-                        const label = STATUS_MAP[response?.answer] || STATUS_MAP['No Response'];
+                        // Get the specific template for the current grantee
+                        const granteeSpecificTemplate = selectedGranteesTemplates[g.id];
+                        const answersForGrantee = granteeAnswers[g.id];
+                        const questionExistsInGranteeTemplate = granteeSpecificTemplate?.sections
+                          ?.flatMap(s => s.subsections || [])
+                          .flatMap(sub => sub.questions || [])
+                          .some(question => question.id === q.id);
+
+                        let label = STATUS_MAP['No Response'];
+
+                        if (questionExistsInGranteeTemplate) {
+                          const response = answersForGrantee?.[q.id];
+                          label = STATUS_MAP[response?.answer] || STATUS_MAP['No Response'];
+                        } else {
+                          // If question does not exist in grantee's specific template, mark as N/A
+                          label = 'N/A (Not applicable to this assessment)';
+                        }
+
                         return <td key={g.id}>{label}</td>;
                       })}
                     </tr>

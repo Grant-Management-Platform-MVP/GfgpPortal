@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import GranteeSelect from '@components/GranteeSelect';
 import GranteeSummaryCard from '@components/GranteeSummaryCard';
@@ -16,29 +16,44 @@ import { isHighRisk } from '@utils/riskUtils';
 const GranteeComparison = () => {
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const [grantees, setGrantees] = useState([]);
-  const [template, setTemplate] = useState(null);
+  const [allTemplates, setAllTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedGrantees, setSelectedGrantees] = useState([]);
   const [chartType, setChartType] = useState('bar');
 
-  const fetchTemplate = async (structure) => {
-    let templateApiUrl;
-    let tieredLevel = null;
-
-    if (structure === 'tiered') {
-      tieredLevel = localStorage.getItem('gfgpTieredLevel'); // This should be 'gold', 'silver', etc.
-      console.log('tieredLevel', tieredLevel);
+  const findMatchingTemplate = (grantee, templates) => {
+    if (!grantee || !templates || templates.length === 0) {
+      return null;
     }
 
-    if (structure === 'tiered' && tieredLevel) {
-      templateApiUrl = `${BASE_URL}gfgp/questionnaire-templates/structure/${structure}/${tieredLevel}`;
-    } else {
-      // For non-tiered structures (Foundation, Advanced), no tieredLevel needed
-      templateApiUrl = `${BASE_URL}gfgp/questionnaire-templates/structure/${structure}`;
+    // 1. Try to find an exact match for tiered templates first (most specific)
+    if (grantee.structure === 'tiered' && grantee.tieredLevel) {
+      const foundTiered = templates.find(
+        (tmpl) =>
+          tmpl.structureType === 'tiered' && tmpl.tieredLevel === grantee.tieredLevel
+      );
+      if (foundTiered) {
+        return foundTiered;
+      }
     }
 
-    const res = await axios.get(templateApiUrl);
-    const tmpl = res.data[0];
+    // 2. If not a tiered grantee, or no specific tiered template found,
+    //    look for a non-tiered template matching the structure.
+    //    A non-tiered template should explicitly *not* have a 'tieredLevel'.
+    const foundNonTiered = templates.find(
+      (tmpl) =>
+        tmpl.structureType === grantee.structure && !tmpl.tieredLevel // Added check: && !tmpl.tieredLevel
+    );
+
+    if (foundNonTiered) {
+      return foundNonTiered;
+    }
+
+    console.warn(`No suitable template found for grantee: ${grantee.granteeName} (Structure: ${grantee.structure}, Tiered Level: ${grantee.tieredLevel || 'N/A'})`);
+    return null;
+  };
+
+  const parseTemplateContent = (tmpl) => {
     const parsedContent = typeof tmpl.content === 'string' ? JSON.parse(tmpl.content) : tmpl.content;
     return {
       ...tmpl,
@@ -48,23 +63,58 @@ const GranteeComparison = () => {
 
   const exportToPDF = () => {
     const input = document.getElementById('comparisonContent');
-    html2canvas(input).then((canvas) => {
+    if (!input) {
+      console.error("Comparison content element not found for PDF export.");
+      return;
+    }
+    html2canvas(input, { useCORS: true, logging: true }).then((canvas) => {
       const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF();
-      pdf.addImage(imgData, 'PNG', 10, 10, 190, 0);
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210;
+      const pageHeight = 297;
+      const imgHeight = canvas.height * imgWidth / canvas.width;
+      let heightLeft = imgHeight;
+
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
       pdf.save('grantee_comparison.pdf');
+    }).catch(error => {
+      console.error("Error generating PDF:", error);
     });
   };
 
   const exportToCSV = () => {
     const csvRows = [];
 
-    if (!template?.sections) {
-      console.warn("No template sections available for CSV export.");
+    if (selectedGrantees.length === 0) {
+      console.warn("No grantees selected for CSV export.");
       return;
     }
 
-    template.sections.forEach((section) => {
+    const referenceTemplate = selectedGranteesTemplates[selectedGrantees[0].id];
+
+    if (!referenceTemplate || !referenceTemplate.sections) {
+      console.warn("No reference template sections available for CSV export.");
+      return;
+    }
+
+    const granteeDataForCSV = selectedGrantees.map(grantee => ({
+      grantee,
+      answers: parseAnswers(grantee.answers),
+      template: selectedGranteesTemplates[grantee.id]
+    }));
+
+
+    referenceTemplate.sections.forEach((section) => {
       csvRows.push([`Section: ${section.title}`]);
       csvRows.push(['Question', ...selectedGrantees.map(g => g.granteeName || `Grantee #${g.userId}`)]);
 
@@ -77,8 +127,8 @@ const GranteeComparison = () => {
         const questionRow = [stripHtml(q.questionText)];
         const evidenceRow = ['Evidence Attached?'];
 
-        selectedGrantees.forEach(grantee => {
-          const answerData = granteeAnswers[grantee.id]?.[q.id];
+        granteeDataForCSV.forEach(({ answers }) => {
+          const answerData = answers[q.id];
 
           if (!answerData) {
             questionRow.push('—');
@@ -93,9 +143,7 @@ const GranteeComparison = () => {
         csvRows.push(questionRow);
         csvRows.push(evidenceRow);
       });
-
-
-      csvRows.push([]); // Spacer
+      csvRows.push([]);
     });
 
     const csv = Papa.unparse(csvRows);
@@ -105,34 +153,51 @@ const GranteeComparison = () => {
     link.download = 'grantee_comparison.csv';
     link.click();
   };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get(`${BASE_URL}gfgp/grantor/grantee-assessments`);
-        const granteeList = res.data;
+        setLoading(true);
+
+        const granteesRes = await axios.get(`${BASE_URL}gfgp/grantor/grantee-assessments`);
+        const granteeList = granteesRes.data;
         setGrantees(granteeList);
 
+        const templatesRes = await axios.get(`${BASE_URL}gfgp/questionnaire-templates/fetch-all`);
+        const allParsedTemplates = templatesRes.data.map(parseTemplateContent);
+        setAllTemplates(allParsedTemplates);
+
         if (granteeList.length > 0) {
-          setSelectedGrantees(granteeList.slice(0, 2)); // Select first two by default
-          const tmpl = await fetchTemplate(granteeList[0].structure);
-          setTemplate(tmpl);
+          setSelectedGrantees(granteeList.slice(0, 2));
         }
       } catch (err) {
-        console.error('Failed to fetch assessments', err);
-        // Optionally set an error state to display to the user
+        console.error('Failed to fetch data:', err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [BASE_URL]); // Depend on BASE_URL
+  }, [BASE_URL]);
+
+  const selectedGranteesTemplates = useMemo(() => {
+    const templatesMap = {};
+    if (selectedGrantees.length > 0 && allTemplates.length > 0) {
+      selectedGrantees.forEach(grantee => {
+        const matchingTemplate = findMatchingTemplate(grantee, allTemplates);
+        if (matchingTemplate) {
+          templatesMap[grantee.id] = matchingTemplate;
+        } else {
+          console.warn(`No matching template found for grantee: ${grantee.granteeName} (ID: ${grantee.id}) with structure: ${grantee.structure}, tieredLevel: ${grantee.tieredLevel || 'N/A'}). This grantee's data may not display correctly.`);
+        }
+      });
+    }
+    return templatesMap;
+  }, [selectedGrantees, allTemplates]);
 
   const parseAnswers = (answers) => {
     try {
-      // Assuming 'answers' might come as a stringified JSON
       const rawAnswers = typeof answers === 'string' ? JSON.parse(answers) : answers;
-      // Flatten the nested structure if it exists
       const flattened = {};
       if (rawAnswers) {
         Object.values(rawAnswers).forEach(section => {
@@ -154,20 +219,26 @@ const GranteeComparison = () => {
     }
   };
 
+  const granteeAnswers = useMemo(() => {
+    return selectedGrantees.reduce((acc, grantee) => {
+      acc[grantee.id] = parseAnswers(grantee.answers);
+      return acc;
+    }, {});
+  }, [selectedGrantees]);
 
-  const granteeAnswers = selectedGrantees.reduce((acc, grantee) => {
-    acc[grantee.id] = parseAnswers(grantee.answers);
-    return acc;
-  }, {});
+  const hasDataForDetailedComparison = selectedGrantees.length > 0 &&
+    selectedGrantees.every(g => selectedGranteesTemplates[g.id] !== undefined);
 
-  if (loading) return <p className="text-center mt-5">Loading comparison...</p>;
-  if (!template || selectedGrantees.length === 0) return <p>No data to compare. Please select grantees or ensure data is available.</p>;
+
+  if (loading) {
+    return <p className="text-center mt-5">Loading comparison data...</p>;
+  }
 
   return (
     <div id="comparisonContent">
       <div className="container d-flex justify-content-end gap-2 mb-3">
-        <button className="btn btn-outline-primary btn-sm" onClick={exportToPDF}>Export to PDF</button>
-        <button className="btn btn-outline-secondary btn-sm" onClick={exportToCSV}>Export to CSV</button>
+        <button className="btn btn-outline-primary btn-sm" onClick={exportToPDF} disabled={!hasDataForDetailedComparison}>Export to PDF</button>
+        <button className="btn btn-outline-secondary btn-sm" onClick={exportToCSV} disabled={!hasDataForDetailedComparison}>Export to CSV</button>
       </div>
       <div className="container py-4">
         <div className="row mb-4">
@@ -183,39 +254,54 @@ const GranteeComparison = () => {
           </div>
         </div>
 
-        <div className="row mb-4">
-          <GranteeSummaryCard grantees={selectedGrantees} />
-        </div>
+        {/* Conditionally render comparison details based on hasDataForDetailedComparison */}
+        {hasDataForDetailedComparison ? (
+          <>
+            {/* referenceTemplateForUI can only be derived if selectedGrantees has at least one item */}
+            {selectedGrantees[0] && selectedGranteesTemplates[selectedGrantees[0].id] && (
+              <>
+                <div className="row mb-4">
+                  <GranteeSummaryCard grantees={selectedGrantees} />
+                </div>
 
-        <SectionComparisonTable
-          template={template}
-          grantees={selectedGrantees}
-          granteeAnswers={granteeAnswers}
-          isHighRisk={isHighRisk} // isHighRisk is not used in SectionComparisonTable, consider if it's meant for another component or if you want to display risk per question here.
-        />
+                <SectionComparisonTable
+                  template={selectedGranteesTemplates[selectedGrantees[0].id]}
+                  grantees={selectedGrantees}
+                  granteeAnswers={granteeAnswers}
+                  selectedGranteesTemplates={selectedGranteesTemplates}
+                  isHighRisk={isHighRisk}
+                />
 
-        <HighRiskSummary
-          template={template}
-          grantees={selectedGrantees}
-          granteeAnswers={granteeAnswers}
-          isHighRisk={isHighRisk}
-        />
+                <HighRiskSummary
+                  template={selectedGranteesTemplates[selectedGrantees[0].id]}
+                  grantees={selectedGrantees}
+                  granteeAnswers={granteeAnswers}
+                  selectedGranteesTemplates={selectedGranteesTemplates}
+                  isHighRisk={isHighRisk}
+                />
 
-        <div className="card mt-5">
-          <div className="card-body">
-            <h5 className="card-title">Visual Breakdown</h5>
-            <div className="d-flex gap-2 mb-3">
-              <button className={`btn btn-sm ${chartType === 'bar' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setChartType('bar')}>Bar</button>
-              <button className={`btn btn-sm ${chartType === 'pie' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setChartType('pie')}>Pie</button>
-              <button className={`btn btn-sm ${chartType === 'line' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setChartType('line')}>Line</button>
-            </div>
+                <div className="card mt-5">
+                  <div className="card-body">
+                    <h5 className="card-title">Visual Breakdown</h5>
+                    <div className="d-flex gap-2 mb-3">
+                      <button className={`btn btn-sm ${chartType === 'bar' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setChartType('bar')}>Bar</button>
+                      <button className={`btn btn-sm ${chartType === 'pie' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setChartType('pie')}>Pie</button>
+                      <button className={`btn btn-sm ${chartType === 'line' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setChartType('line')}>Line</button>
+                    </div>
 
-            {/* These chart components will also need similar flattening logic internally if they operate on template.sections.questions directly */}
-            {chartType === 'bar' && <ComparisonBarChart grantees={selectedGrantees} granteeAnswers={granteeAnswers} template={template} />}
-            {chartType === 'pie' && <ComparisonPieChart grantees={selectedGrantees} granteeAnswers={granteeAnswers} template={template} />}
-            {chartType === 'line' && <ComparisonLineChart grantees={selectedGrantees} granteeAnswers={granteeAnswers} template={template} />}
-          </div>
-        </div>
+                    {chartType === 'bar' && <ComparisonBarChart grantees={selectedGrantees} granteeAnswers={granteeAnswers} template={selectedGranteesTemplates[selectedGrantees[0].id]} selectedGranteesTemplates={selectedGranteesTemplates} />}
+                    {chartType === 'pie' && <ComparisonPieChart grantees={selectedGrantees} granteeAnswers={granteeAnswers} template={selectedGranteesTemplates[selectedGrantees[0].id]} selectedGranteesTemplates={selectedGranteesTemplates} />}
+                    {chartType === 'line' && <ComparisonLineChart grantees={selectedGrantees} granteeAnswers={granteeAnswers} template={selectedGranteesTemplates[selectedGrantees[0].id]} selectedGranteesTemplates={selectedGranteesTemplates} />}
+                  </div>
+                </div>
+              </>
+            )}
+          </>
+        ) : (
+          <p className="text-center mt-4 text-muted">
+            Select one or more grantees from the dropdown above to view their assessment comparison.
+          </p>
+        )}
       </div>
     </div>
   );
