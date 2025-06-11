@@ -86,7 +86,11 @@ const SharedReportsList = () => {
         const isTiered = report.structure === 'tiered';
         const reportUrl = isTiered
           ? `/grantor/view-report/${report.granteeId}/${report.structure}/${report.id}/${report.tieredLevel}`
-          : `/grantor/view-report/${report.granteeId}/${report.structure}/${report.id}`;
+          : `/grantor/view-report/${report.granteeId}/${report.structure}/${report.id}/null`;
+
+        console.log('Report URL:', reportUrl);
+        console.log('Report Structure:', report.structure);
+        console.log('Report Tiered Level:', report.tieredLevel);
 
         return (
           <Link to={reportUrl} className="btn btn-sm btn-outline-primary">
