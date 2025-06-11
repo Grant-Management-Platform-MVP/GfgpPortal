@@ -34,10 +34,12 @@ const AssessmentFromInvite = () => {
     const userId = user?.userId;
     const FIXED_OPTIONS = ["Yes", "In-progress", "No", "Not Applicable"];
     const { tieredLevel } = useParams(); // 'tieredLevel' from URL will be 'urlTieredLevel'
+    const {structureType} = useParams(); // 'structureType' from URL will be 'urlStructureType
     const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
 
     useEffect(() => {
         let isMounted = true;
+        console.log(structureType, "structureType from URL");
 
         if (!invite) {
             if (isMounted) {
@@ -212,8 +214,8 @@ const AssessmentFromInvite = () => {
 
             const submissionPayload = {
                 userId,
-                structure: template.structureType,
-                tieredLevel: template.structureType === 'tiered' ? tieredLevel : null, // Send null for non-tiered
+                structure: structureType,
+                tieredLevel: structureType === 'tiered' ? tieredLevel : null, // Send null for non-tiered
                 version: template.version,
                 answers: structuredAnswers,
             };
@@ -223,11 +225,11 @@ const AssessmentFromInvite = () => {
                 submissionPayload
             );
             toast.success("Assessment submitted successfully!");
-            if (inviteId) {
-                await axios.put(`${BASE_URL}gfgp/invites/${inviteId}/status`);
-            } else {
-                console.warn("Invite ID missing, cannot deactivate invitation.");
-            }
+            // if (inviteId) {
+            //     await axios.put(`${BASE_URL}gfgp/invites/${inviteId}/status`);
+            // } else {
+            //     console.warn("Invite ID missing, cannot deactivate invitation.");
+            // }
             setSubmitted(true);
             navigate('/grantee/')
             const freshRes = await axios.get(

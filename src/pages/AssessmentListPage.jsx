@@ -29,9 +29,9 @@ const AssessmentListPage = () => {
     const [invitesData, setInvitesData] = useState([]);
     const [hasTieredAssessments, setHasTieredAssessments] = useState(false);
 
-
+    //structureType
     const handleStartAssessment = (invite) => {
-        navigate(`/grantee/assessment-invite/${invite.id}/${invite.tieredLevel}`, {
+        navigate(`/grantee/assessment-invite/${invite.id}/${invite.tieredLevel}/${invite.structureType}`, {
             state: { invite },
         });
     };
@@ -70,14 +70,13 @@ const AssessmentListPage = () => {
         fetchAssessments();
     }, [userId]);
 
-    const handleNavigate = (id, status) => {
-        let url = '/grantee/questionnaire';
+    const handleNavigate = (id, status, tieredLevel) => {
+        let mode = 'edit';
+        if (status === 'SENT_BACK') mode = 'fix';
+        else if (status === 'SUBMITTED') mode = 'view';
+        console.log(`Navigating to questionnaire with ID: ${id}, mode: ${mode}, tieredLevel: ${tieredLevel}`);
 
-        if (status === 'SENT_BACK') url += '?mode=fix';
-        else if (status === 'SUBMITTED') url += '?mode=view';
-        else if (status === 'SAVED') url += '?mode=edit';
-
-        navigate(url);
+        navigate(`/grantee/questionnaire/${id}?mode=${mode}&tieredLevel=${tieredLevel}`);
     };
 
     const getButtonLabel = (status) => {
@@ -119,7 +118,7 @@ const AssessmentListPage = () => {
                     To get started, you'll need to first select your preffered assessment structure (Foundation, Advanced, or Tiered).<br />
                     Once you've<Button variant="link" onClick={() => navigate('/grantee/select-structure')}>made a selection</Button>you can begin your first assessment.
                     <div className="mt-2">
-                        <Button variant="link" onClick={() => navigate('/grantee/questionnaire')}>
+                        <Button variant="link" onClick={() => navigate('/grantee/questionnaire/:id')}>
                             Start your first assessment
                         </Button>
                     </div>
@@ -179,7 +178,7 @@ const AssessmentListPage = () => {
                                             size="sm"
                                             onClick={(e) => {
                                                 e.stopPropagation(); // prevent row onClick
-                                                handleNavigate(a.id, a.status);
+                                                handleNavigate(a.id, a.status, a.tieredLevel);
                                             }}
                                             disabled={loading}
                                         >

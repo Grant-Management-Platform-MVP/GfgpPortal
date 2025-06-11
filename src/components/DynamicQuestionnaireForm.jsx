@@ -4,7 +4,7 @@ import { Spinner, Container, ProgressBar, Card, Form, Button, Alert } from "reac
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 
-const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
+const DynamicQuestionnaireForm = ({ selectedStructure, mode, questionnaireId, tieredLevel }) => {
   const [template, setTemplate] = useState(null);
   const [submissionStatus, setSubmissionStatus] = useState(null);
   const [submissionId, setSubmissionId] = useState(null);
@@ -18,6 +18,7 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
   const [lastSaved, setLastSaved] = useState(null);
   const [canSubmit, setCanSubmit] = useState(true);
   const [feedbackResolved, setFeedbackResolved] = useState(false);
+  const [resolvedFeedbacks, setResolvedFeedbacks] = useState({}); // Stores { questionId: true, ... } for resolved ones
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const navigate = useNavigate();
 
@@ -30,6 +31,16 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
   const FIXED_OPTIONS = ["Yes", "In-progress", "No", "Not Applicable"];
   // const location = useLocation();
 
+
+  const handleMarkAsResolved = (questionId) => {
+    setResolvedFeedbacks(prev => ({
+      ...prev,
+      [questionId]: true // Mark this specific question's feedback as resolved
+    }));
+    // Optionally, you might want to trigger a backend update here
+    // to persist the resolved status.
+    toast.success(`Feedback for question ${questionId} marked as resolved!`);
+  };
 
   const normalizeIncomingAnswers = (incomingAnswersRaw) => {
     const normalized = {};
@@ -88,14 +99,16 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
 
         // 1. Fetch Template First
         let templateApiUrl;
-        let tieredLevel = null;
+        let tieredParam = null;
 
-        if (structure === 'tiered') {
-          tieredLevel = localStorage.getItem('gfgpTieredLevel');
+        if (structure === 'tiered' && (mode === 'edit' || mode === 'fix')) {
+          tieredParam = tieredLevel;
+        } else {
+          tieredParam = localStorage.getItem('gfgpTieredLevel');
         }
 
-        if (structure === 'tiered' && tieredLevel) {
-          templateApiUrl = `${BASE_URL}gfgp/questionnaire-templates/structure/${structure}/${tieredLevel}`;
+        if (structure === 'tiered' && tieredParam) {
+          templateApiUrl = `${BASE_URL}gfgp/questionnaire-templates/structure/${structure}/${tieredParam}`;
         } else {
           templateApiUrl = `${BASE_URL}gfgp/questionnaire-templates/structure/${structure}`;
         }
@@ -118,10 +131,12 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
         let initialSubmissionStatus = null;
         let initialSubmissionId = null;
         let derivedFormMode = "EDIT_DRAFT"; // Default mode
+        let initialResolvedFeedbacks = {}; // Initialize here
 
         // First attempt: Check for a full submission (SUBMITTED, SENT_BACK)
         try {
           const submissionRes = await axios.get(`${BASE_URL}gfgp/assessment-submissions/${userId}/${structure}`);
+          // const submissionRes = await axios.get(`${BASE_URL}gfgp/submissions/${questionnaireId}`);
           const submissionData = submissionRes.data[0];
 
           if (isMounted && submissionData) {
@@ -158,9 +173,27 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
         }
 
         if (Object.keys(initialAnswers).length === 0 && derivedFormMode === "EDIT_DRAFT") {
+          console.warn("No answers found in submission, checking for draft...");
           try {
-            const draftRes = await axios.get(`${BASE_URL}gfgp/assessment-responses/${userId}/${structure}`);
-            if (isMounted && draftRes.data && draftRes.data.answers) {
+
+            let assessmentResponseUrl = null;
+            let tieredParam = null;
+
+            if (structure === 'tiered' && mode === 'edit') {
+              tieredParam = tieredLevel;
+            } else {
+              tieredParam = localStorage.getItem('gfgpTieredLevel');
+            }
+
+            if (structure === 'tiered' && tieredParam) {
+              assessmentResponseUrl = `${BASE_URL}gfgp/responses/${userId}/${tieredParam}`;
+            } else {
+              assessmentResponseUrl = `${BASE_URL}gfgp/assessment-responses/${userId}/${structure}`;
+            }
+
+            const draftRes = await axios.get(assessmentResponseUrl);
+
+            if (draftRes.data && draftRes.data.answers) {
               console.log("Draft response found:", draftRes.data);
               const rawAnswersString = draftRes.data.answers;
               if (rawAnswersString) {
@@ -220,6 +253,7 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
           setSubmissionStatus(initialSubmissionStatus);
           setSubmissionId(initialSubmissionId);
           setFormMode(finalFormMode)
+          setResolvedFeedbacks(initialResolvedFeedbacks);
         }
 
       } catch (err) {
@@ -415,6 +449,7 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
   const renderInput = (question) => {
     const disabled = formMode === "VIEW_ONLY";
     const response = answers[question.id] || {};
+    const isFeedbackResolvedForThisQuestion = resolvedFeedbacks[question.id];
 
     const handleAnswerChange = (value) => {
       setHasInteracted(true);
@@ -501,7 +536,7 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
           </>
         )}
         {/* Display funder feedback prominently when in FIX_MODE */}
-        {formMode === "FIX_MODE" && response.funderFeedback && !feedbackResolved && (
+        {formMode === "FIX_MODE" && response.funderFeedback && !isFeedbackResolvedForThisQuestion && (
           <Alert variant="info" className="p-2 my-2 h6 text-dark text-secondary">
             <strong>Reviewer Feedback:</strong>
             <p
@@ -512,7 +547,7 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode }) => {
               <Button
                 variant="warning"
                 size="lg"
-                onClick={() => setFeedbackResolved(true)}
+                onClick={() => handleMarkAsResolved(question.id)}
               >
                 Mark as Resolved
               </Button>
