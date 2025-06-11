@@ -225,11 +225,11 @@ const AssessmentFromInvite = () => {
                 submissionPayload
             );
             toast.success("Assessment submitted successfully!");
-            // if (inviteId) {
-            //     await axios.put(`${BASE_URL}gfgp/invites/${inviteId}/status`);
-            // } else {
-            //     console.warn("Invite ID missing, cannot deactivate invitation.");
-            // }
+            if (inviteId) {
+                await axios.put(`${BASE_URL}gfgp/invites/${inviteId}/status`);
+            } else {
+                console.warn("Invite ID missing, cannot deactivate invitation.");
+            }
             setSubmitted(true);
             navigate('/grantee/')
             const freshRes = await axios.get(
