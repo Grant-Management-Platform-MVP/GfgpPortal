@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Spinner, Alert, Badge, Button, Tab, Nav, Row, Col, Fade, Form } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import { FaCubes, FaBrain, FaLayerGroup } from 'react-icons/fa';
@@ -44,7 +43,7 @@ const GFGP_OPTIONS = [
 ];
 
 const SelectStructure = () => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [selected, setSelected] = useState(null);
   const [selectedTieredLevel, setSelectedTieredLevel] = useState(null); // New state for Tiered levels
   const [loading, setLoading] = useState(false);
@@ -121,17 +120,17 @@ const SelectStructure = () => {
     }
   };
 
-  const handleProceed = () => {
-    // If Tiered is selected and a level isn't, prompt the user
-    if (selected === 'tiered' && !selectedTieredLevel) {
-      toast.warn('Please select a Tiered level before starting the assessment.', {
-        autoClose: 3000,
-        position: 'top-center',
-      });
-      return;
-    }
-    navigate('/grantee/questionnaire');
-  };
+  // const handleProceed = () => {
+  //   // If Tiered is selected and a level isn't, prompt the user
+  //   if (selected === 'tiered' && !selectedTieredLevel) {
+  //     toast.warn('Please select a Tiered level before starting the assessment.', {
+  //       autoClose: 3000,
+  //       position: 'top-center',
+  //     });
+  //     return;
+  //   }
+  //   navigate('/grantee/questionnaire');
+  // };
 
   const handleTieredLevelChange = (levelId) => {
     setSelectedTieredLevel(levelId);
@@ -261,14 +260,14 @@ const SelectStructure = () => {
           <Alert variant="success" className="d-inline-block">
             ✅ Structure saved successfully!
           </Alert>
-          <div className="mt-3 d-flex justify-content-center gap-3">
+          {/* <div className="mt-3 d-flex justify-content-center gap-3">
             <Button variant="success btn-lg" onClick={handleProceed}>
               Start Assessment
             </Button>
             <Button variant="warning btn-lg" onClick={() => navigate('/grantee/')}>
               Maybe Later
             </Button>
-          </div>
+          </div> */}
         </div>
       )}
 
