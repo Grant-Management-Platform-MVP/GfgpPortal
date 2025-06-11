@@ -111,6 +111,21 @@ const AssessmentInvitationWizard = () => {
       return;
     }
 
+
+    // Rule 2: Prevent inviting to Tiered if already in Foundation/Advanced
+    // Checks if the grantee has ANY past assessment with 'foundation' or 'advanced' structure.
+    const hasDoneFoundationOrAdvanced = selectedGrantee.assessments.some(
+      a => a.structure === 'foundation' || a.structure === 'advanced'
+    );
+
+    // Checks if the current invitation attempt is to 'tiered' structure.
+    const isAttemptingUpgradeToTiered = structure === 'tiered';
+
+    if (hasDoneFoundationOrAdvanced && isAttemptingUpgradeToTiered) {
+      toast.error(`This grantee is already enrolled in a Foundation or Advanced GFGP structure and cannot be invited to Tiered structure.`);
+      return; // Stop further processing
+    }
+
     // === ✅ Proceed with Invite ===
     setSending(true);
     try {
