@@ -80,17 +80,20 @@ const SharedReportsList = () => {
         </Button>
       );
     }
-
+//tieredLevel
     switch (report.consentStatus) {
-      case 'GRANTED':
+      case 'GRANTED': {
+        const isTiered = report.structure === 'tiered';
+        const reportUrl = isTiered
+          ? `/grantor/view-report/${report.granteeId}/${report.structure}/${report.id}/${report.tieredLevel}`
+          : `/grantor/view-report/${report.granteeId}/${report.structure}/${report.id}`;
+
         return (
-          <Link
-            to={`/grantor/view-report/${report.granteeId}/${report.structure}/${report.id}`}
-            className="btn btn-sm btn-outline-primary"
-          >
+          <Link to={reportUrl} className="btn btn-sm btn-outline-primary">
             View Report
           </Link>
         );
+      }
       case 'PENDING':
         return (
           <OverlayTrigger overlay={<Tooltip>Waiting for grantee to approve access</Tooltip>} placement="top">

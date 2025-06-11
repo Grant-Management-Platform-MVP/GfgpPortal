@@ -17,7 +17,7 @@ const GrantorDashboard = () => {
           <Route path="grantor-overview" element={<GrantorOverview />} />
           <Route path="invites" element={<AssessmentInvitations />} />
           <Route path="view-assessments" element={<GranteeComparison/>} />
-          <Route path="view-report/:granteeId/:structure/:id" element={<ComplianceReportsWrapper />} />
+          <Route path="view-report/:granteeId/:structure/:id/:tieredLevel" element={<ComplianceReportsWrapper />} />
           <Route path="shared-reports" element={<SharedReportsList />} />
           <Route path="audit-logs" element={<AuditLogs/>} />
            <Route path="grantee-reports" element={<ReportsDashboard/>} />

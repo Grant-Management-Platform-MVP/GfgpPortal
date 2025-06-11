@@ -18,7 +18,7 @@ import {
   Legend,
 } from "recharts";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
@@ -43,12 +43,12 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure, id
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const navigate = useNavigate();
   // const [currentSubmission, setCurrentSubmission] = useState(null);
+   const {tieredLevel} = useParams();
 
 
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const user = JSON.parse(localStorage.getItem("user"));
   const currentUserId = propUserId || user?.userId;
-  console.log('granteeId', currentUserId);
   const currentStructure = propStructure || localStorage.getItem("gfgpStructure");
   // const currentAssessmentId = propAssessmentId;
   const isGrantor = user?.role === 'GRANTOR'; // case-sensitive match
@@ -63,18 +63,32 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure, id
       }
 
       try {
-        const [templateRes, responseRes] = await Promise.all([
-          axios.get(`${BASE_URL}gfgp/questionnaire-templates-report/user/${currentUserId}`), // fetch_template
-          axios.get(`${BASE_URL}gfgp/assessment-submissions-report/user/${currentUserId}`), // fetch_submission
-        ]);
+        // Fetch the assessment submission first to get its exact structure and tieredLevel
+        const responseRes = await axios.get(`${BASE_URL}gfgp/assessment-submissions-report/user/${currentUserId}`);
+        const assessmentSubmission = responseRes.data;
 
-        // Check if template data exists
-        if (!Array.isArray(templateRes.data) || templateRes.data.length === 0) {
-          setError("No submitted assessment found for this user.");
+        if (!assessmentSubmission || !assessmentSubmission.answers) {
+          setError("No submitted assessment found for this user or assessment is incomplete.");
+          setLoading(false);
           return;
         }
 
-        const [templateObj] = templateRes.data;
+        // Determine the structure and tieredLevel from the fetched assessment submission
+        const submissionStructure = assessmentSubmission.structure;
+        const submissionTieredLevel = assessmentSubmission.tieredLevel; // Will be null for non-tiered structures
+
+        // Now fetch the template using the exact structure and tieredLevel of the submission
+        const templateRes = await axios.get(
+            `${BASE_URL}gfgp/questionnaire-templates-report/user/${currentUserId}`,
+            {
+                params: {
+                    structure: submissionStructure,
+                    tieredLevel: submissionTieredLevel
+                }
+            }
+        );
+
+        const templateObj = templateRes.data;
 
         if (!templateObj?.content) {
           setError("The questionnaire template is missing content.");
@@ -88,9 +102,8 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure, id
 
         let flattenedAnswers = {};
         try {
-          const raw = responseRes.data.answers;
+          const raw = assessmentSubmission.answers;
           const submittedAnswers = typeof raw === "string" ? JSON.parse(raw) : raw || {};
-
           if (submittedAnswers) {
             Object.values(submittedAnswers).forEach(section => {
               if (section?.subsections) {
@@ -135,9 +148,9 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure, id
         );
 
         setRecommendations(recMap);
-        setCompleteness(responseRes.data.completeness ?? null);
-        setCompliance(responseRes.data.compliance ?? null);
-        setQuestionnaire(responseRes.data || {});
+        setCompleteness(assessmentSubmission.completeness ?? null);
+        setCompliance(assessmentSubmission.compliance ?? null);
+        setQuestionnaire(assessmentSubmission || {});
 
       } catch (err) {
         console.error("Error fetching data for compliance report:", err);
