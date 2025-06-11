@@ -12,26 +12,31 @@ const ComplianceChart = () => {
     const [loading, setLoading] = useState(true);
     const BASE_URL = import.meta.env.VITE_BASE_URL;
 
-    useEffect(() => {
-        fetchComplianceData();
-    }, []);
+    const margin = { top: 60, right: 30, bottom: 40, left: 180 };
+    const CHART_BASE_WIDTH = 800;
+    const BAR_HEIGHT = 20;
+    const BAR_PADDING = 10;
+    const MIN_CHART_HEIGHT = 300;
 
     const getComplianceColor = (value) => {
-        if (value >= 80) return '#007bff'; // Blue
-        if (value >= 50) return '#17a2b8'; // Teal
-        return '#6c757d'; // Grey
+        if (value >= 80) return '#007bff'; // Blue (High compliance)
+        if (value >= 50) return '#17a2b8'; // Teal (Medium compliance)
+        return '#6c757d'; // Grey (Low compliance)
     };
 
-
     const getCompletenessColor = (value) => {
-        if (value >= 80) return '#28a745'; // Green
-        if (value >= 50) return '#ffc107'; // Yellow
-        return '#dc3545'; // Red
+        if (value >= 80) return '#28a745'; // Green (High completeness)
+        if (value >= 50) return '#ffc107'; // Yellow (Medium completeness)
+        return '#dc3545'; // Red (Low completeness)
     };
 
     const fetchComplianceData = async () => {
+        setLoading(true);
         try {
             const response = await fetch(`${BASE_URL}gfgp/reports/compliance-progress`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             const data = await response.json();
 
             const transformedData = data.map(item => ({
@@ -40,58 +45,90 @@ const ComplianceChart = () => {
                 compliance: parseFloat(item.compliance.toFixed(2))
             }));
 
+            transformedData.sort((a, b) => a.grantee.localeCompare(b.grantee));
+
             setChartData(transformedData);
-            setLoading(false);
-            renderChart(transformedData);
         } catch (error) {
             console.error('Failed to fetch compliance data:', error);
+            setChartData([]);
+        } finally {
             setLoading(false);
         }
     };
 
+    useEffect(() => {
+        fetchComplianceData();
+    }, [BASE_URL]);
+
+    useEffect(() => {
+        if (!loading && chartRef.current) {
+            if (chartData.length > 0) {
+                renderChart(chartData);
+            } else {
+                const svg = d3.select(chartRef.current);
+                svg.selectAll("*").remove();
+                svg.attr("width", CHART_BASE_WIDTH + margin.left + margin.right)
+                    .attr("height", MIN_CHART_HEIGHT + margin.top + margin.bottom);
+                svg.append("text")
+                    .attr("x", (CHART_BASE_WIDTH + margin.left + margin.right) / 2)
+                    .attr("y", (MIN_CHART_HEIGHT + margin.top + margin.bottom) / 2)
+                    .attr("text-anchor", "middle")
+                    .attr("fill", "#6c757d")
+                    .attr("font-size", "16px")
+                    .text("No compliance data available.");
+            }
+        }
+    }, [chartData, loading]);
+
     const renderChart = (data) => {
         const svg = d3.select(chartRef.current);
-        svg.selectAll("*").remove();
 
-        const margin = { top: 20, right: 30, bottom: 40, left: 180 };
-        const width = 800 - margin.left - margin.right;
-        const height = data.length * 50;
+        const chartHeight = data.length * (2 * BAR_HEIGHT + BAR_PADDING);
+        const svgHeight = Math.max(MIN_CHART_HEIGHT, chartHeight) + margin.top + margin.bottom;
+        const svgWidth = CHART_BASE_WIDTH + margin.left + margin.right;
 
-        svg.attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom);
+        svg.attr("width", svgWidth)
+            .attr("height", svgHeight);
 
-        const chart = svg.append("g")
+        svg.selectAll("g, rect, text, defs, .tooltip-container").remove();
+
+        const chartArea = svg.append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);
 
         const y = d3.scaleBand()
             .domain(data.map(d => d.grantee))
-            .range([0, height])
-            .padding(0.1);
+            .range([0, chartHeight])
+            .paddingInner(BAR_PADDING / (2 * BAR_HEIGHT + BAR_PADDING));
 
         const x = d3.scaleLinear()
             .domain([0, 100])
-            .range([0, width]);
+            .range([0, CHART_BASE_WIDTH]);
 
-        chart.append("g")
-            .call(d3.axisLeft(y));
+        // Y-axis
+        chartArea.append("g")
+            .call(d3.axisLeft(y).tickSizeOuter(0))
+            .selectAll("text")
+            .attr("font-size", "12px");
 
-        chart.append("g")
-            .attr("transform", `translate(0, ${height})`)
+        // X-axis
+        chartArea.append("g")
+            .attr("transform", `translate(0, ${chartHeight})`)
             .call(d3.axisBottom(x).ticks(5).tickFormat(d => d + "%"));
 
         const tooltip = d3.select("#tooltip");
 
-        // Compliance Bars
-        chart.selectAll(".bar-compliance")
-            .data(data)
-            .enter()
+        const complianceBars = chartArea.selectAll(".bar-compliance")
+            .data(data, d => d.grantee);
+
+        complianceBars.enter()
             .append("rect")
             .attr("class", "bar-compliance")
             .attr("y", d => y(d.grantee))
-            .attr("height", y.bandwidth() / 2)
+            .attr("height", BAR_HEIGHT)
             .attr("x", 0)
             .attr("fill", d => getComplianceColor(d.compliance))
             .attr("width", 0)
+            .merge(complianceBars)
             .on("mouseover", (event, d) => {
                 tooltip.style("visibility", "visible")
                     .html(`<strong>${d.grantee}</strong><br/>Compliance: ${d.compliance}%`);
@@ -107,17 +144,25 @@ const ComplianceChart = () => {
             .duration(800)
             .attr("width", d => x(d.compliance));
 
-        // Completeness Bars
-        chart.selectAll(".bar-completeness")
-            .data(data)
-            .enter()
+        complianceBars.exit()
+            .transition()
+            .duration(500)
+            .attr("width", 0)
+            .remove();
+
+
+        const completenessBars = chartArea.selectAll(".bar-completeness")
+            .data(data, d => d.grantee);
+
+        completenessBars.enter()
             .append("rect")
             .attr("class", "bar-completeness")
-            .attr("y", d => y(d.grantee) + y.bandwidth() / 2)
-            .attr("height", y.bandwidth() / 2)
+            .attr("y", d => y(d.grantee) + BAR_HEIGHT + (BAR_PADDING / 2))
+            .attr("height", BAR_HEIGHT)
             .attr("x", 0)
             .attr("fill", d => getCompletenessColor(d.completeness))
             .attr("width", 0)
+            .merge(completenessBars)
             .on("mouseover", (event, d) => {
                 tooltip.style("visibility", "visible")
                     .html(`<strong>${d.grantee}</strong><br/>Completeness: ${d.completeness}%`);
@@ -133,32 +178,93 @@ const ComplianceChart = () => {
             .duration(800)
             .attr("width", d => x(d.completeness));
 
-        // Labels for Compliance
-        chart.selectAll(".label-compliance")
-            .data(data)
-            .enter()
-            .append("text")
-            .attr("x", d => x(d.compliance) + 5)
-            .attr("y", d => y(d.grantee) + y.bandwidth() / 4 + 4)
-            .text(d => `${d.compliance}%`)
-            .attr("font-size", "11px")
-            .attr("fill", "#333");
+        completenessBars.exit()
+            .transition()
+            .duration(500)
+            .attr("width", 0)
+            .remove();
 
-        // Labels for Completeness
-        chart.selectAll(".label-completeness")
-            .data(data)
+        const complianceLabels = chartArea.selectAll(".label-compliance")
+            .data(data, d => d.grantee);
+
+        complianceLabels.enter()
+            .append("text")
+            .attr("class", "label-compliance")
+            .attr("x", 5)
+            .attr("y", d => y(d.grantee) + BAR_HEIGHT / 2 + 4)
+            .attr("font-size", "11px")
+            .attr("fill", "#333")
+            .text(d => `${d.compliance}%`)
+            .merge(complianceLabels)
+            .transition()
+            .duration(800)
+            .attr("x", d => x(d.compliance) + 5);
+
+        complianceLabels.exit()
+            .transition()
+            .duration(500)
+            .attr("opacity", 0)
+            .remove();
+
+        const completenessLabels = chartArea.selectAll(".label-completeness")
+            .data(data, d => d.grantee);
+
+        completenessLabels.enter()
+            .append("text")
+            .attr("class", "label-completeness")
+            .attr("x", 5)
+            .attr("y", d => y(d.grantee) + BAR_HEIGHT + BAR_HEIGHT / 2 + 4 + (BAR_PADDING / 2))
+            .attr("font-size", "11px")
+            .attr("fill", "#333")
+            .text(d => `${d.completeness}%`)
+            .merge(completenessLabels)
+            .transition()
+            .duration(800)
+            .attr("x", d => x(d.completeness) + 5);
+
+        completenessLabels.exit()
+            .transition()
+            .duration(500)
+            .attr("opacity", 0)
+            .remove();
+
+
+        const legendData = [
+            { label: "Compliance", color: getComplianceColor(100) },
+            { label: "Completeness", color: getCompletenessColor(100) }
+        ];
+
+        const legend = svg.append("g")
+            .attr("class", "legend")
+            .attr("transform", `translate(${margin.left}, 15)`);
+
+        legend.selectAll("rect")
+            .data(legendData)
+            .enter()
+            .append("rect")
+            .attr("x", (d, i) => i * 120)
+            .attr("y", 0)
+            .attr("width", 18)
+            .attr("height", 18)
+            .attr("fill", d => d.color);
+
+        legend.selectAll("text")
+            .data(legendData)
             .enter()
             .append("text")
-            .attr("x", d => x(d.completeness) + 5)
-            .attr("y", d => y(d.grantee) + (3 * y.bandwidth()) / 4 + 4)
-            .text(d => `${d.completeness}%`)
-            .attr("font-size", "11px")
+            .attr("x", (d, i) => i * 120 + 24)
+            .attr("y", 9)
+            .attr("dy", ".35em")
+            .text(d => d.label)
+            .attr("font-size", "12px")
             .attr("fill", "#333");
     };
 
 
     const exportPNG = () => {
-        html2canvas(document.getElementById("chart-wrapper")).then((canvas) => {
+        html2canvas(document.getElementById("chart-wrapper"), {
+            scale: 2
+        }).then((canvas) => {
             canvas.toBlob((blob) => saveAs(blob, "compliance-progress.png"));
         });
     };
@@ -166,7 +272,9 @@ const ComplianceChart = () => {
     const exportPDF = () => {
         const chartElement = document.getElementById("chart-wrapper");
 
-        html2canvas(chartElement).then((canvas) => {
+        html2canvas(chartElement, {
+            scale: 2
+        }).then((canvas) => {
             const imgData = canvas.toDataURL("image/png");
             const pdf = new jsPDF({
                 orientation: 'landscape',
@@ -209,9 +317,9 @@ const ComplianceChart = () => {
             <Row className="my-3 justify-content-between align-items-center">
                 <Col><h4>Compliance Stats by Grantee</h4></Col>
                 <Col className="text-end">
-                    <Button variant="primary" className="me-2" onClick={exportPNG} disabled={loading}>Export as PNG</Button>
-                    <Button variant="success" className="me-2" onClick={exportPDF} disabled={loading}>Export as PDF</Button>
-                    <Button variant="warning" onClick={exportCSV} disabled={loading}>Export as CSV</Button>
+                    <Button variant="primary" className="me-2" onClick={exportPNG} disabled={loading || chartData.length === 0}>Export as PNG</Button>
+                    <Button variant="success" className="me-2" onClick={exportPDF} disabled={loading || chartData.length === 0}>Export as PDF</Button>
+                    <Button variant="warning" onClick={exportCSV} disabled={loading || chartData.length === 0}>Export as CSV</Button>
                 </Col>
             </Row>
             <div id="chart-wrapper">
@@ -219,7 +327,7 @@ const ComplianceChart = () => {
                     position: 'absolute',
                     visibility: 'hidden',
                     backgroundColor: '#fff',
-                    border: '1px solid #ccc',
+                    border: '1px solid solid #ccc',
                     padding: '8px',
                     borderRadius: '4px',
                     fontSize: '12px',
@@ -233,9 +341,6 @@ const ComplianceChart = () => {
                 ) : (
                     <svg
                         ref={chartRef}
-                        width="1200"
-                        // height={chartData.length * 50 + 60}
-                        height="700"
                         style={{ backgroundColor: '#f8f9fa', borderRadius: 8, border: '1px solid #ccc' }}
                     ></svg>
                 )}
@@ -256,11 +361,8 @@ const ReportsDashboard = () => {
         try {
             const response = await fetch(`${import.meta.env.VITE_BASE_URL}gfgp/reports/risk-performance`);
             const data = await response.json();
-
-            // Optional: sort or process here if needed
             setRiskData(data);
 
-            // Dynamically extract unique section keys (besides grantee and overall)
             if (data.length > 0) {
                 const allKeys = new Set();
                 data.forEach(entry => {
