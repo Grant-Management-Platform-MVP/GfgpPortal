@@ -450,7 +450,7 @@ const AssessmentFromInvite = () => {
                     <h2 className="mb-0">{template.title}</h2>
                     <small className="text-muted">Version: {template.version}</small>
                 </Card.Body>
-                <ProgressBar now={progress} label={`${progress}% completed`} />
+                {isLastSection && <ProgressBar now={progress} label={`${progress}% completed`} />}
             </Card>
 
             {isLocked && (
