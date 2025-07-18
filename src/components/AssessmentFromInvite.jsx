@@ -426,11 +426,21 @@ const AssessmentFromInvite = () => {
         );
     }
 
-    if (loading || !template) {
+    if (loading) {
         return (
             <Container className="mt-5 text-center">
                 <Spinner animation="border" />
                 <p>Initializing your assessment questionnaire...</p>
+            </Container>
+        );
+    }
+
+    if (!template) {
+        return (
+            <Container className="mt-5 text-center">
+                <h5>Assessment submission Not Found</h5>
+                <p>We couldn’t find an assessment for your selected structure or tier.</p>
+                <p>Please check your selection or contact support if the issue persists.</p>
             </Container>
         );
     }
