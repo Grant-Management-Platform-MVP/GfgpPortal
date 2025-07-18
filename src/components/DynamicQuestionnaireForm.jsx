@@ -594,7 +594,7 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode, questionnaireId, ti
     (q) => answers[q.id]?.answer && answers[q.id]?.answer !== ""
   ).length;
 
-  const progress = allVisibleQuestions.length > 0 ? Math.round((answeredCount / allVisibleQuestions.length) * 100) : 100;
+  const progress = allVisibleQuestions.length > 0 ? Math.round((answeredCount / allVisibleQuestions.length) * 100) : 100
 
   // --- Wizard Navigation Logic ---
   const totalSections = template.sections.length;
@@ -628,7 +628,7 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode, questionnaireId, ti
             Section {currentSectionIndex + 1} of {totalSections}: {currentSection.title}
           </p>
         </Card.Body>
-        <ProgressBar now={progress} label={`${progress}% completed`} />
+        {isLastSection && <ProgressBar now={progress} label={`${progress}% completed`} />}
       </Card>
 
       {(formMode === "EDIT_DRAFT" || formMode === "FIX_MODE") && (
