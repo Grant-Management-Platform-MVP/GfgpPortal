@@ -38,6 +38,8 @@ const DashboardLayout = ({ title, children, userRole }) => {
   const handleLogout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('gfgpStructure');
+    localStorage.removeItem('gfgpTieredLevel');
+    localStorage.removeItem('selectedStructure');
     window.location.href = '/';
   };
 
