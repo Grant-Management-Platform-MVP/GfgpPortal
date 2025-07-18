@@ -360,6 +360,42 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode, questionnaireId, ti
     //   return;
     // }
 
+    // --- Start: Mandatory Document Upload Validation ---
+    const missingUploads = [];
+    template.sections.forEach(section => {
+      (section.subsections || []).forEach(subsection => {
+        (subsection.questions || []).forEach(question => {
+          // Only validate if the question is currently visible
+          if (shouldShowQuestion(question)) {
+            // Check if question is marked as required AND expects upload evidence
+            // Assuming question.required is a string "true" or "false"
+            if (question.required === "true" && question.uploadEvidence) {
+              const userAnswer = answers[question.id]?.answer;
+              const userEvidence = answers[question.id]?.evidence;
+
+              // If the user answered "Yes" but no evidence is uploaded
+              if (userAnswer === "Yes" && !userEvidence) {
+                missingUploads.push(question.questionText);
+              }
+            }
+          }
+        });
+      });
+    });
+
+    if (missingUploads.length > 0) {
+      const missingList = missingUploads.map((text, index) => `${index + 1}. ${text}`).join("<br/>");
+      toast.error(
+        <div>
+          <strong>Please upload required documents for the following questions:</strong>
+          <div dangerouslySetInnerHTML={{ __html: missingList }} />
+        </div>,
+        { autoClose: false, closeOnClick: false, draggable: false }
+      );
+      return; // Prevent form submission
+    }
+    // --- End: Mandatory Document Upload Validation ---
+
     try {
 
       let tieredLevel = null;
