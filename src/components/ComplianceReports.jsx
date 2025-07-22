@@ -154,7 +154,7 @@ const ComplianceReports = ({ granteeId: propUserId, structure: propStructure, id
 
       } catch (err) {
         console.error("Error fetching data for compliance report:", err);
-        setError(`Failed to load compliance report: ${err.message || "Unknown error"}`);
+        setError(`Failed to load compliance report: ${"No matching questionnaire template found for the specified structure and tiered level"}`);
       } finally {
         setLoading(false);
       }
