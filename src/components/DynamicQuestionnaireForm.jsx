@@ -497,9 +497,9 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode, questionnaireId, ti
             answer: value,
           },
         };
-        if (value !== "Not Applicable" && prev[question.id]?.answer === "Not Applicable") {
-          delete newState[question.id].justification;
-        }
+        // if (value !== "Not Applicable" && prev[question.id]?.answer === "Not Applicable") {
+        //   delete newState[question.id].justification;
+        // }
         if (value !== "Yes" && prev[question.id]?.answer === "Yes") {
           delete newState[question.id].evidence;
         }
