@@ -527,7 +527,7 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode, questionnaireId, ti
         <Form.Control
           as="textarea"
           rows={2}
-          placeholder="Provide Evidence or Justification"
+          placeholder="Provide Additional Information"
           value={response.justification || ""}
           onChange={(e) =>
             setAnswers((prev) => ({
