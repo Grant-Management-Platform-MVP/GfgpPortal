@@ -523,25 +523,24 @@ const DynamicQuestionnaireForm = ({ selectedStructure, mode, questionnaireId, ti
           />
         ))}
 
-        {response.answer === "Not Applicable" && (
-          <Form.Control
-            as="textarea"
-            rows={2}
-            placeholder="Provide justification for N/A"
-            value={response.justification || ""}
-            onChange={(e) =>
-              setAnswers((prev) => ({
-                ...prev,
-                [question.id]: {
-                  ...prev[question.id],
-                  justification: e.target.value,
-                },
-              }))
-            }
-            className="mt-2"
-            disabled={disabled}
-          />
-        )}
+
+        <Form.Control
+          as="textarea"
+          rows={2}
+          placeholder="Provide Evidennce or Justification"
+          value={response.justification || ""}
+          onChange={(e) =>
+            setAnswers((prev) => ({
+              ...prev,
+              [question.id]: {
+                ...prev[question.id],
+                justification: e.target.value,
+              },
+            }))
+          }
+          className="mt-2"
+          disabled={disabled}
+        />
 
         {response.answer === "Yes" && question.uploadEvidence && (
           <>
