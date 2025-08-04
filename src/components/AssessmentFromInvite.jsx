@@ -367,7 +367,7 @@ const AssessmentFromInvite = () => {
                 <Form.Control
                     as="textarea"
                     rows={2}
-                    placeholder="Provide Evidennce or Justification"
+                    placeholder="Provide Evidence or Justification"
                     value={response.justification || ""}
                     onChange={(e) =>
                         setAnswers((prev) => ({
