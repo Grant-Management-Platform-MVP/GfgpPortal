@@ -46,9 +46,30 @@ const UserManagement = () => {
       if (!response.ok) throw new Error("Approval failed");
 
       toast.success("User approved and notified");
-      fetchUsers(); // refetch list
+      fetchUsers();
     } catch (error) {
       toast.error("Could not approve user: " + error.message);
+    } finally {
+      setLoadingUserId(null);
+    }
+  };
+
+  const handleDisable = async (userId) => {
+    if (!window.confirm("Are you sure you want to disable this user?")) return;
+
+    setLoadingUserId(userId);
+    try {
+      const response = await fetch(BASE_URL + `admin/${userId}/disable`, {
+        method: "PATCH",
+        headers: { Accept: "application/json" },
+      });
+
+      if (!response.ok) throw new Error("Disabling user failed");
+
+      toast.success("User has been disabled");
+      fetchUsers();
+    } catch (error) {
+      toast.error("Could not disable user: " + error.message);
     } finally {
       setLoadingUserId(null);
     }
@@ -168,8 +189,8 @@ const UserManagement = () => {
                           {user.status || "Unknown"}
                         </span>
                       </td>
-                      <td>
-                        {user.status === "PENDING_APPROVAL" ? (
+                      <td className="d-flex gap-2">
+                        {user.status === "PENDING_APPROVAL" && (
                           <button
                             className="btn btn-sm btn-outline-success d-flex align-items-center gap-1"
                             onClick={() => handleApprove(user.id)}
@@ -187,7 +208,30 @@ const UserManagement = () => {
                               </>
                             )}
                           </button>
-                        ) : (
+                        )}
+
+                        {user.status === "APPROVED" && (
+                          <button
+                            className="btn btn-sm btn-outline-danger d-flex align-items-center gap-1"
+                            onClick={() => handleDisable(user.id)}
+                            disabled={loadingUserId === user.id}
+                          >
+                            {loadingUserId === user.id ? (
+                              <>
+                                <span className="spinner-border spinner-border-sm me-1" />
+                                Disabling...
+                              </>
+                            ) : (
+                              <>
+                                <FaUserCheck className="text-danger" />
+                                Disable
+                              </>
+                            )}
+                          </button>
+                        )}
+
+                        {(user.status !== "APPROVED" &&
+                          user.status !== "PENDING_APPROVAL") && (
                           <span className="text-muted">—</span>
                         )}
                       </td>
@@ -213,7 +257,9 @@ const UserManagement = () => {
               </span>
               <button
                 className="btn btn-outline-secondary btn-sm"
-                disabled={currentPage === Math.ceil(filteredUsers.length / usersPerPage)}
+                disabled={
+                  currentPage === Math.ceil(filteredUsers.length / usersPerPage)
+                }
                 onClick={() => setCurrentPage((prev) => prev + 1)}
               >
                 Next <FaChevronRight />
